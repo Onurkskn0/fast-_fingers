@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FastFingers — Yazım hızını test et.">
+    <title>FASTFINGERS</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <span class="logo__icon">▸</span>
+                <span class="logo__text">fastfingers</span>
+                <span class="logo__cursor">_</span>
+            </div>
+            <button class="theme-btn" id="themeToggle" aria-label="Tema">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="5" />
+                    <path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Start Screen -->
+        <section class="screen screen--start" id="startScreen">
+            <div class="terminal">
+                <div class="terminal__header">
+                    <span class="terminal__dot"></span>
+                    <span class="terminal__dot"></span>
+                    <span class="terminal__dot"></span>
+                    <span class="terminal__title">~/typing-test</span>
+                </div>
+                <div class="terminal__body">
+                    <p class="terminal__line">
+                        <span class="terminal__prompt">$</span>
+                        <span class="terminal__cmd">./start --mode=typing</span>
+                    </p>
+                    <p class="terminal__line terminal__line--output">
+                        Yazım hızını test et. Rekorunu kır.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Personal Best -->
+            <div class="stats-card" id="personalBest">
+                <div class="stats-card__header">
+                    <span class="stats-card__icon">★</span>
+                    <span class="stats-card__title">EN İYİ SKOR</span>
+                </div>
+                <div class="stats-card__grid">
+                    <div class="stat-item">
+                        <span class="stat-item__value" id="pbWpm">—</span>
+                        <span class="stat-item__label">WPM</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-item__value" id="pbAccuracy">—</span>
+                        <span class="stat-item__label">%DOĞRULUK</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-item__value" id="pbChars">—</span>
+                        <span class="stat-item__label">HARF</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Duration Select -->
+            <div class="duration-select">
+                <span class="duration-label">SÜRE:</span>
+                <div class="duration-btns">
+                    <button class="duration-btn" data-duration="15">15s</button>
+                    <button class="duration-btn active" data-duration="30">30s</button>
+                    <button class="duration-btn" data-duration="60">60s</button>
+                </div>
+            </div>
+
+            <button class="start-btn" id="startBtn">
+                <span class="start-btn__icon">▶</span>
+                <span class="start-btn__text">BAŞLAT</span>
+            </button>
+
+            <p class="hint">ENTER veya SPACE ile başla</p>
+        </section>
+
+        <!-- Typing Screen -->
+        <section class="screen screen--typing hidden" id="typingArea">
+            <!-- Timer -->
+            <div class="timer">
+                <div class="timer__display">
+                    <span class="timer__value" id="countdown">30</span>
+                    <span class="timer__unit">sn</span>
+                </div>
+                <div class="timer__bar">
+                    <div class="timer__progress" id="countdownProgress"></div>
+                </div>
+            </div>
+
+            <!-- Sentence Display -->
+            <div class="typing-box">
+                <div class="sentence" id="sentenceDisplay"></div>
+            </div>
+
+            <!-- Input -->
+            <div class="input-wrapper">
+                <span class="input-prompt">▸</span>
+                <input type="text" class="typing-input" id="typingInput" autocomplete="off" autocorrect="off"
+                    autocapitalize="off" spellcheck="false" placeholder="yazmaya başla...">
+            </div>
+
+            <!-- Live Stats -->
+            <div class="live-stats">
+                <div class="live-stat">
+                    <span class="live-stat__value" id="liveWpm">0</span>
+                    <span class="live-stat__label">WPM</span>
+                    <span class="live-stat__target" id="targetWpm"></span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat__value" id="liveAccuracy">100</span>
+                    <span class="live-stat__label">%DOĞRULUK</span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat__value" id="liveChars">0</span>
+                    <span class="live-stat__label">HARF</span>
+                    <span class="live-stat__target" id="targetChars"></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Screen -->
+        <section class="screen screen--results hidden" id="resultsScreen">
+            <!-- New Record -->
+            <div class="new-record hidden" id="newRecord">
+                <span class="new-record__stars">★★★</span>
+                <span class="new-record__text">YENİ REKOR!</span>
+                <span class="new-record__stars">★★★</span>
+            </div>
+
+            <div class="result-main">
+                <span class="result-main__label">WPM</span>
+                <span class="result-main__value" id="finalWpm">0</span>
+            </div>
+
+            <div class="result-details">
+                <div class="result-detail">
+                    <span class="result-detail__value" id="finalAccuracy">100%</span>
+                    <span class="result-detail__label">DOĞRULUK</span>
+                </div>
+                <div class="result-detail">
+                    <span class="result-detail__value" id="finalChars">0</span>
+                    <span class="result-detail__label">KARAKTER</span>
+                </div>
+                <div class="result-detail">
+                    <span class="result-detail__value" id="finalWords">0</span>
+                    <span class="result-detail__label">KELİME</span>
+                </div>
+            </div>
+
+            <div class="result-actions">
+                <button class="btn btn--primary" id="retryBtn">
+                    <span>↻</span> TEKRAR
+                </button>
+                <button class="btn btn--secondary" id="homeBtn">
+                    <span>←</span> MENÜ
+                </button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <kbd>ESC</kbd> çıkış
+        </footer>
+    </div>
+
+    <script src="sentences.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
