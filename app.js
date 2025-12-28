@@ -1,9 +1,11 @@
 /**
- * FASTFINGERS — Time-Based Typing Test Engine
- * Clean, focused, performant.
+ * FASTFINGERS — Adaptive Word-Based Typing Test
+ * Non-repeating sentences with difficulty scaling based on WPM.
  */
 
-const SKIP_PUNCTUATION = ['.', ',', '!', '?', ';', ':', '"', "'", '(', ')', '-', '—', '…', '·'];
+// ═══════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════
 
 const TURKISH_LOWER_MAP = {
     'İ': 'i', 'I': 'ı', 'Ğ': 'ğ', 'Ü': 'ü', 'Ş': 'ş', 'Ö': 'ö', 'Ç': 'ç'
@@ -17,9 +19,13 @@ function turkishToLower(str) {
     return result;
 }
 
-function charsMatch(a, b) {
-    return a === b || turkishToLower(a) === turkishToLower(b);
+function wordsMatch(input, target) {
+    return turkishToLower(input.trim()) === turkishToLower(target.trim());
 }
+
+// ═══════════════════════════════════════════
+// MAIN CLASS
+// ═══════════════════════════════════════════
 
 class FastFingers {
     constructor() {
@@ -31,69 +37,182 @@ class FastFingers {
             typingInput: document.getElementById('typingInput'),
             countdown: document.getElementById('countdown'),
             countdownProgress: document.getElementById('countdownProgress'),
-            timer: null, // Will be set in init
+            timer: null,
             themeToggle: document.getElementById('themeToggle'),
             startBtn: document.getElementById('startBtn'),
             retryBtn: document.getElementById('retryBtn'),
             homeBtn: document.getElementById('homeBtn'),
             modeBtns: document.querySelectorAll('.duration-btn'),
-            // Live stats
             liveWpm: document.getElementById('liveWpm'),
             liveAccuracy: document.getElementById('liveAccuracy'),
             liveChars: document.getElementById('liveChars'),
             targetWpm: document.getElementById('targetWpm'),
             targetChars: document.getElementById('targetChars'),
-            // Final stats
             finalWpm: document.getElementById('finalWpm'),
             finalAccuracy: document.getElementById('finalAccuracy'),
             finalChars: document.getElementById('finalChars'),
             finalWords: document.getElementById('finalWords'),
             newRecord: document.getElementById('newRecord'),
-            // Personal best
             pbWpm: document.getElementById('pbWpm'),
             pbAccuracy: document.getElementById('pbAccuracy'),
             pbChars: document.getElementById('pbChars')
         };
 
         this.state = {
+            // Sentence pools by difficulty
+            sentencePools: {
+                easy: [],
+                medium: [],
+                hard: [],
+                expert: []
+            },
+
+            // Track used sentences to prevent repeats
+            usedSentences: new Set(),
+
+            // Current difficulty level
+            currentDifficulty: 'easy',
+
+            // Current sentence/word state
+            currentSentence: '',
+            words: [],
+            currentWordIndex: 0,
+
             // Settings
-            duration: 30, // seconds
+            duration: 30,
 
-            // Sentences
-            allSentences: [],
-            displaySentence: '',
-            typingSentence: '',
-            typingToDisplayMap: [],
-
-            // Progress
-            currentSentenceIdx: 0,
-            completedChars: 0,
+            // Stats
+            totalWordsTyped: 0,
+            correctWords: 0,
+            totalCharsTyped: 0,
             correctChars: 0,
-            incorrectChars: 0,
-            completedWords: 0,
 
             // Timer
             startTime: null,
             timeRemaining: 30,
             isRunning: false,
-            timerInterval: null,
+            timerInterval: null
+        };
 
-            // State
-            hasErrors: false
+        // Difficulty thresholds based on WPM
+        this.difficultyThresholds = {
+            easy: 0,      // 0-29 WPM
+            medium: 30,   // 30-49 WPM
+            hard: 50,     // 50-69 WPM
+            expert: 70    // 70+ WPM
         };
 
         this.init();
     }
 
-    init() {
+    async init() {
+        await this.loadSentences();
         this.loadTheme();
         this.loadPersonalBest();
         this.bindEvents();
-        // Get timer container for urgency class
-        this.els.timer = this.els.countdown.closest('.timer');
+        this.els.timer = this.els.countdown?.closest('.timer');
     }
 
-    // Personal Best
+    // ═══════════════════════════════════════════
+    // SENTENCE LOADING & SELECTION
+    // ═══════════════════════════════════════════
+
+    async loadSentences() {
+        try {
+            const response = await fetch('sentences.json');
+            const data = await response.json();
+            this.state.sentencePools = {
+                easy: data.easy || [],
+                medium: data.medium || [],
+                hard: data.hard || [],
+                expert: data.expert || []
+            };
+        } catch (error) {
+            console.error('Failed to load sentences:', error);
+            this.state.sentencePools = {
+                easy: ["Bugün hava çok güzel", "Kedim uyumayı seviyor"],
+                medium: ["Teknoloji hayatımızı etkiliyor"],
+                hard: ["Yapay zeka hızla gelişiyor"],
+                expert: ["Kuantum bilgisayarlar gelecekte önemli olacak"]
+            };
+        }
+    }
+
+    getDifficultyForWpm(wpm) {
+        if (wpm >= this.difficultyThresholds.expert) return 'expert';
+        if (wpm >= this.difficultyThresholds.hard) return 'hard';
+        if (wpm >= this.difficultyThresholds.medium) return 'medium';
+        return 'easy';
+    }
+
+    getUnusedSentence(difficulty) {
+        const pool = this.state.sentencePools[difficulty];
+        const available = pool.filter(s => !this.state.usedSentences.has(s));
+
+        // If all sentences in this difficulty are used, try adjacent difficulty
+        if (available.length === 0) {
+            // Try to get from a nearby difficulty
+            const fallbackOrder = {
+                easy: ['medium', 'hard', 'expert'],
+                medium: ['easy', 'hard', 'expert'],
+                hard: ['medium', 'expert', 'easy'],
+                expert: ['hard', 'medium', 'easy']
+            };
+
+            for (const fallback of fallbackOrder[difficulty]) {
+                const fallbackPool = this.state.sentencePools[fallback];
+                const fallbackAvailable = fallbackPool.filter(s => !this.state.usedSentences.has(s));
+                if (fallbackAvailable.length > 0) {
+                    const sentence = fallbackAvailable[Math.floor(Math.random() * fallbackAvailable.length)];
+                    this.state.usedSentences.add(sentence);
+                    return sentence;
+                }
+            }
+
+            // If everything is used, reset and pick random
+            this.state.usedSentences.clear();
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        // Pick random from available
+        const sentence = available[Math.floor(Math.random() * available.length)];
+        this.state.usedSentences.add(sentence);
+        return sentence;
+    }
+
+    getAdaptiveSentence() {
+        // Calculate current WPM to determine difficulty
+        let currentWpm = 0;
+        if (this.state.startTime) {
+            const elapsed = (Date.now() - this.state.startTime) / 60000;
+            currentWpm = elapsed > 0 ? Math.round((this.state.correctChars / 5) / elapsed) : 0;
+        }
+
+        // Determine appropriate difficulty
+        const newDifficulty = this.getDifficultyForWpm(currentWpm);
+
+        // Gradual difficulty increase - don't jump more than one level
+        const levels = ['easy', 'medium', 'hard', 'expert'];
+        const currentIdx = levels.indexOf(this.state.currentDifficulty);
+        const targetIdx = levels.indexOf(newDifficulty);
+
+        if (targetIdx > currentIdx + 1) {
+            // Only go up one level at a time
+            this.state.currentDifficulty = levels[currentIdx + 1];
+        } else if (targetIdx < currentIdx - 1) {
+            // Only go down one level at a time
+            this.state.currentDifficulty = levels[currentIdx - 1];
+        } else {
+            this.state.currentDifficulty = newDifficulty;
+        }
+
+        return this.getUnusedSentence(this.state.currentDifficulty);
+    }
+
+    // ═══════════════════════════════════════════
+    // PERSONAL BEST
+    // ═══════════════════════════════════════════
+
     getStorageKey() {
         return `ff-pb-${this.state.duration}`;
     }
@@ -105,7 +224,7 @@ class FastFingers {
         if (saved) {
             const pb = JSON.parse(saved);
             this.els.pbWpm.textContent = pb.wpm;
-            this.els.pbAccuracy.textContent = pb.accuracy;
+            this.els.pbAccuracy.textContent = pb.accuracy + '%';
             this.els.pbChars.textContent = pb.chars;
         } else {
             this.els.pbWpm.textContent = '—';
@@ -119,14 +238,13 @@ class FastFingers {
         const saved = localStorage.getItem(key);
         const current = saved ? JSON.parse(saved) : null;
 
-        // Check if new record (WPM is primary metric)
         const isNewRecord = !current || stats.wpm > current.wpm;
 
         if (isNewRecord) {
             localStorage.setItem(key, JSON.stringify({
                 wpm: stats.wpm,
                 accuracy: stats.accuracy,
-                chars: stats.totalChars
+                chars: stats.correctChars
             }));
         }
 
@@ -139,7 +257,10 @@ class FastFingers {
         return saved ? JSON.parse(saved) : null;
     }
 
-    // Theme
+    // ═══════════════════════════════════════════
+    // THEME
+    // ═══════════════════════════════════════════
+
     loadTheme() {
         const saved = localStorage.getItem('ff-theme');
         if (saved) {
@@ -156,47 +277,59 @@ class FastFingers {
         localStorage.setItem('ff-theme', next);
     }
 
-    // Events
+    // ═══════════════════════════════════════════
+    // EVENTS
+    // ═══════════════════════════════════════════
+
     bindEvents() {
-        this.els.themeToggle.addEventListener('click', () => this.toggleTheme());
-        this.els.startBtn.addEventListener('click', () => this.start());
-        this.els.retryBtn.addEventListener('click', () => this.start());
-        this.els.homeBtn.addEventListener('click', () => this.goHome());
+        this.els.themeToggle?.addEventListener('click', () => this.toggleTheme());
+        this.els.startBtn?.addEventListener('click', () => this.start());
+        this.els.retryBtn?.addEventListener('click', () => this.start());
+        this.els.homeBtn?.addEventListener('click', () => this.goHome());
 
         this.els.modeBtns.forEach(btn => {
             btn.addEventListener('click', () => this.selectMode(btn));
         });
 
-        this.els.typingInput.addEventListener('input', (e) => this.handleInput(e));
-        this.els.typingInput.addEventListener('keydown', (e) => {
+        this.els.typingInput?.addEventListener('input', (e) => this.handleInput(e));
+
+        this.els.typingInput?.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.goHome();
+                return;
             }
-            // ENTER works like SPACE during typing
-            if (e.key === 'Enter' && this.state.isRunning) {
+
+            if ((e.key === ' ' || e.key === 'Enter') && this.state.isRunning) {
                 e.preventDefault();
-                // Insert a space character
-                const input = this.els.typingInput;
-                const pos = input.selectionStart;
-                input.value = input.value.slice(0, pos) + ' ' + input.value.slice(pos);
-                input.selectionStart = input.selectionEnd = pos + 1;
-                // Trigger input event
-                input.dispatchEvent(new Event('input', { bubbles: true }));
+                this.submitWord();
             }
         });
-        this.els.typingInput.addEventListener('paste', (e) => e.preventDefault());
+
+        this.els.typingInput?.addEventListener('paste', (e) => e.preventDefault());
 
         document.addEventListener('keydown', (e) => {
+            // Start screen shortcuts
             if (!this.els.startScreen.classList.contains('hidden')) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
                     this.start();
                 }
             }
+
+            // Results screen shortcuts
+            if (!this.els.resultsScreen.classList.contains('hidden')) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.start(); // Retry
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.goHome();
+                }
+            }
         });
 
         window.addEventListener('focus', () => {
-            if (this.state.isRunning) this.els.typingInput.focus();
+            if (this.state.isRunning) this.els.typingInput?.focus();
         });
     }
 
@@ -204,64 +337,37 @@ class FastFingers {
         this.els.modeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.state.duration = parseInt(btn.dataset.duration);
-        // Update personal best display for new duration
         this.loadPersonalBest();
     }
 
-    // Filter punctuation
-    filterPunctuation(sentence) {
-        const filtered = [];
-        const map = [];
-        for (let i = 0; i < sentence.length; i++) {
-            if (!SKIP_PUNCTUATION.includes(sentence[i])) {
-                map.push(i);
-                filtered.push(sentence[i]);
-            }
-        }
-        return { filtered: filtered.join(''), map };
-    }
+    // ═══════════════════════════════════════════
+    // GAME FLOW
+    // ═══════════════════════════════════════════
 
-    // Get all sentences shuffled
-    getAllSentences() {
-        const all = [
-            ...getAllSentences('easy'),
-            ...getAllSentences('medium'),
-            ...getAllSentences('hard')
-        ];
-        return all.sort(() => Math.random() - 0.5);
-    }
-
-    // Game flow
     start() {
-        // Get shuffled sentences
-        this.state.allSentences = this.getAllSentences();
-        this.state.currentSentenceIdx = 0;
-
-        // Reset stats
-        this.state.completedChars = 0;
+        // Reset all state
+        this.state.usedSentences.clear();
+        this.state.currentDifficulty = 'easy'; // Start easy
+        this.state.totalWordsTyped = 0;
+        this.state.correctWords = 0;
+        this.state.totalCharsTyped = 0;
         this.state.correctChars = 0;
-        this.state.incorrectChars = 0;
-        this.state.completedWords = 0;
-        this.state.hasErrors = false;
+        this.state.currentWordIndex = 0;
 
-        // Timer
         this.state.timeRemaining = this.state.duration;
         this.state.startTime = null;
         this.state.isRunning = true;
 
-        // UI
         this.els.startScreen.classList.add('hidden');
         this.els.resultsScreen.classList.add('hidden');
         this.els.typingArea.classList.remove('hidden');
 
-        // Reset timer
-        this.els.countdownProgress.style.transform = 'scaleX(1)';
-        this.els.countdown.textContent = this.state.duration;
-        if (this.els.timer) {
-            this.els.timer.classList.remove('timer--urgent');
+        if (this.els.countdownProgress) {
+            this.els.countdownProgress.style.transform = 'scaleX(1)';
         }
+        this.els.countdown.textContent = this.state.duration;
+        this.els.timer?.classList.remove('timer--urgent');
 
-        // Show target from personal best
         const pb = this.getPersonalBest();
         if (pb) {
             this.els.targetWpm.textContent = pb.wpm;
@@ -271,29 +377,19 @@ class FastFingers {
             this.els.targetChars.textContent = '';
         }
 
-        // Load first sentence
-        this.loadNextSentence();
+        this.loadNewSentence();
         this.updateLiveStats();
 
         this.els.typingInput.value = '';
         this.els.typingInput.focus();
     }
 
-    loadNextSentence() {
-        // Loop back if we run out
-        if (this.state.currentSentenceIdx >= this.state.allSentences.length) {
-            this.state.allSentences = this.getAllSentences();
-            this.state.currentSentenceIdx = 0;
-        }
-
-        const sentence = this.state.allSentences[this.state.currentSentenceIdx];
-        const { filtered, map } = this.filterPunctuation(sentence);
-
-        this.state.displaySentence = sentence;
-        this.state.typingSentence = filtered;
-        this.state.typingToDisplayMap = map;
-
-        this.renderSentence();
+    loadNewSentence() {
+        // Get adaptive sentence based on current WPM
+        this.state.currentSentence = this.getAdaptiveSentence();
+        this.state.words = this.state.currentSentence.split(' ');
+        this.state.currentWordIndex = 0;
+        this.renderWords();
     }
 
     goHome() {
@@ -310,14 +406,9 @@ class FastFingers {
         if (this.state.timerInterval) clearInterval(this.state.timerInterval);
 
         const stats = this.calcFinalStats();
-
-        // Check for new record
         const isNewRecord = this.savePersonalBest(stats);
-
-        // Update personal best display
         this.loadPersonalBest();
 
-        // Show/hide new record badge
         if (isNewRecord) {
             this.els.newRecord.classList.remove('hidden');
         } else {
@@ -326,14 +417,17 @@ class FastFingers {
 
         this.els.finalWpm.textContent = stats.wpm;
         this.els.finalAccuracy.textContent = `${stats.accuracy}%`;
-        this.els.finalChars.textContent = stats.totalChars;
-        this.els.finalWords.textContent = stats.words;
+        this.els.finalChars.textContent = stats.correctChars;
+        this.els.finalWords.textContent = stats.correctWords;
 
         this.els.typingArea.classList.add('hidden');
         this.els.resultsScreen.classList.remove('hidden');
     }
 
-    // Timer
+    // ═══════════════════════════════════════════
+    // TIMER
+    // ═══════════════════════════════════════════
+
     startTimer() {
         this.state.startTime = Date.now();
 
@@ -343,19 +437,17 @@ class FastFingers {
             const elapsed = (Date.now() - this.state.startTime) / 1000;
             this.state.timeRemaining = Math.max(0, this.state.duration - elapsed);
 
-            // Update countdown display
             this.els.countdown.textContent = Math.ceil(this.state.timeRemaining);
 
-            // Update progress bar (shrinks from right)
             const progress = 1 - (elapsed / this.state.duration);
-            this.els.countdownProgress.style.transform = `scaleX(${Math.max(0, progress)})`;
-
-            // Urgency state (last 5 seconds)
-            if (this.state.timeRemaining <= 5) {
-                this.els.timer.classList.add('timer--urgent');
+            if (this.els.countdownProgress) {
+                this.els.countdownProgress.style.transform = `scaleX(${Math.max(0, progress)})`;
             }
 
-            // Time's up
+            if (this.state.timeRemaining <= 5) {
+                this.els.timer?.classList.add('timer--urgent');
+            }
+
             if (this.state.timeRemaining <= 0) {
                 this.finish();
             }
@@ -364,200 +456,176 @@ class FastFingers {
         }, 100);
     }
 
-    // Input handling
+    // ═══════════════════════════════════════════
+    // INPUT HANDLING
+    // ═══════════════════════════════════════════
+
     handleInput(e) {
         if (!this.state.isRunning) return;
 
-        // Start timer on first input
         if (!this.state.startTime) {
             this.startTimer();
         }
 
         const input = e.target.value;
-        const target = this.state.typingSentence;
-
-        this.processInput(input, target);
+        this.updateWordHighlight(input);
     }
 
-    processInput(input, target) {
-        const inputChars = input.split('');
-        const targetChars = target.split('');
+    submitWord() {
+        const input = this.els.typingInput.value.trim();
+        const targetWord = this.state.words[this.state.currentWordIndex];
 
-        let correct = 0, incorrect = 0;
+        if (!targetWord) return;
 
-        for (let i = 0; i < inputChars.length; i++) {
-            if (i < targetChars.length) {
-                if (charsMatch(inputChars[i], targetChars[i])) {
-                    correct++;
-                } else {
-                    incorrect++;
-                }
+        this.state.totalWordsTyped++;
+        this.state.totalCharsTyped += input.length;
+
+        const isCorrect = wordsMatch(input, targetWord);
+        if (isCorrect) {
+            this.state.correctWords++;
+            this.state.correctChars += targetWord.length;
+        } else {
+            let correctChars = 0;
+            const inputLower = turkishToLower(input);
+            const targetLower = turkishToLower(targetWord);
+            for (let i = 0; i < Math.min(inputLower.length, targetLower.length); i++) {
+                if (inputLower[i] === targetLower[i]) correctChars++;
             }
+            this.state.correctChars += correctChars;
         }
 
-        this.state.hasErrors = incorrect > 0;
-        this.updateCharDisplay(inputChars, targetChars);
-
-        // Check sentence completion - must match length exactly and have no errors
-        const isComplete = inputChars.length === targetChars.length && correct === targetChars.length;
-
-        if (isComplete) {
-            this.completeSentence(targetChars.length);
-        }
-    }
-
-    completeSentence(charCount) {
-        // Add completed chars
-        this.state.completedChars += charCount;
-        this.state.correctChars += charCount;
-
-        // Count words (spaces + 1)
-        const words = this.state.typingSentence.split(' ').length;
-        this.state.completedWords += words;
-
-        // Next sentence
-        this.state.currentSentenceIdx++;
+        this.markWordCompleted(isCorrect);
+        this.state.currentWordIndex++;
         this.els.typingInput.value = '';
-        this.loadNextSentence();
-    }
 
-    updateCharDisplay(inputChars, targetChars) {
-        const typableEls = this.els.sentenceDisplay.querySelectorAll('.char:not(.char--punctuation)');
-        const allEls = this.els.sentenceDisplay.querySelectorAll('.char');
-
-        allEls.forEach(el => el.classList.remove('char--current', 'char--correct', 'char--incorrect'));
-
-        typableEls.forEach((el, i) => {
-            if (i < inputChars.length) {
-                el.classList.add(charsMatch(inputChars[i], targetChars[i]) ? 'char--correct' : 'char--incorrect');
-            } else if (i === inputChars.length) {
-                el.classList.add('char--current');
-            }
-        });
-
-        // Mark punctuation
-        const map = this.state.typingToDisplayMap;
-        const display = this.state.displaySentence;
-
-        for (let i = 0; i < display.length; i++) {
-            if (SKIP_PUNCTUATION.includes(display[i])) {
-                const el = allEls[i];
-                const prevIdx = map.findIndex(m => m > i) - 1;
-                if (prevIdx >= 0 && prevIdx < inputChars.length) {
-                    if (charsMatch(inputChars[prevIdx], targetChars[prevIdx])) {
-                        el.classList.add('char--correct');
-                    }
-                }
-            }
+        if (this.state.currentWordIndex >= this.state.words.length) {
+            this.loadNewSentence();
+        } else {
+            this.updateCurrentWordHighlight();
         }
+
+        this.updateLiveStats();
     }
 
-    // Rendering
-    renderSentence() {
-        const display = this.state.displaySentence;
-        const map = this.state.typingToDisplayMap;
-        const typable = new Set(map);
+    // ═══════════════════════════════════════════
+    // RENDERING
+    // ═══════════════════════════════════════════
 
-        let first = true;
-        const html = display.split('').map((char, i) => {
-            const classes = ['char'];
-            if (!typable.has(i)) classes.push('char--punctuation');
-            if (char === ' ') classes.push('char--space');
-            if (typable.has(i) && first) {
-                classes.push('char--current');
-                first = false;
-            }
-            return `<span class="${classes.join(' ')}">${char === ' ' ? '&nbsp;' : char}</span>`;
-        }).join('');
+    renderWords() {
+        const html = this.state.words.map((word, index) => {
+            const classes = ['word'];
+            if (index === 0) classes.push('word--current');
+            return `<span class="${classes.join(' ')}" data-index="${index}">${this.escapeHtml(word)}</span>`;
+        }).join('<span class="word-space"> </span>');
 
         this.els.sentenceDisplay.innerHTML = html;
     }
 
-    // Stats
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    updateWordHighlight(input) {
+        const wordEl = this.els.sentenceDisplay.querySelector('.word--current');
+        if (!wordEl) return;
+
+        const target = this.state.words[this.state.currentWordIndex];
+        const inputLower = turkishToLower(input);
+        const targetLower = turkishToLower(target);
+
+        let hasError = false;
+        for (let i = 0; i < input.length; i++) {
+            if (i >= targetLower.length || inputLower[i] !== targetLower[i]) {
+                hasError = true;
+                break;
+            }
+        }
+
+        wordEl.classList.toggle('word--error', hasError);
+    }
+
+    markWordCompleted(isCorrect) {
+        const wordEl = this.els.sentenceDisplay.querySelector('.word--current');
+        if (!wordEl) return;
+
+        wordEl.classList.remove('word--current', 'word--error');
+        wordEl.classList.add(isCorrect ? 'word--correct' : 'word--incorrect');
+    }
+
+    updateCurrentWordHighlight() {
+        const wordEls = this.els.sentenceDisplay.querySelectorAll('.word');
+        wordEls.forEach((el, index) => {
+            el.classList.remove('word--current');
+            if (index === this.state.currentWordIndex) {
+                el.classList.add('word--current');
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════
+    // STATS
+    // ═══════════════════════════════════════════
+
     updateLiveStats() {
         const stats = this.calcLiveStats();
         this.els.liveWpm.textContent = stats.wpm;
         this.els.liveAccuracy.textContent = stats.accuracy;
-        this.els.liveChars.textContent = stats.chars;
+        this.els.liveChars.textContent = stats.correctChars;
 
-        // Check if beating personal best
         const pb = this.getPersonalBest();
         if (pb) {
-            const wpmStat = this.els.liveWpm.parentElement;
-            const charsStat = this.els.liveChars.parentElement;
+            const wpmStat = this.els.liveWpm?.parentElement;
+            const charsStat = this.els.liveChars?.parentElement;
 
             if (stats.wpm > pb.wpm) {
-                wpmStat.classList.add('live-stat--beating');
+                wpmStat?.classList.add('live-stat--beating');
             } else {
-                wpmStat.classList.remove('live-stat--beating');
+                wpmStat?.classList.remove('live-stat--beating');
             }
 
-            if (stats.chars > pb.chars) {
-                charsStat.classList.add('live-stat--beating');
+            if (stats.correctChars > pb.chars) {
+                charsStat?.classList.add('live-stat--beating');
             } else {
-                charsStat.classList.remove('live-stat--beating');
+                charsStat?.classList.remove('live-stat--beating');
             }
         }
     }
 
     calcLiveStats() {
         if (!this.state.startTime) {
-            return { wpm: 0, accuracy: 100, chars: 0 };
+            return { wpm: 0, accuracy: 100, correctChars: 0 };
         }
 
-        const elapsed = (Date.now() - this.state.startTime) / 60000; // minutes
-        const input = this.els.typingInput.value;
-        const target = this.state.typingSentence;
+        const elapsed = (Date.now() - this.state.startTime) / 60000;
+        const wpm = elapsed > 0 ? Math.round((this.state.correctChars / 5) / elapsed) : 0;
+        const acc = this.state.totalCharsTyped > 0
+            ? Math.round((this.state.correctChars / this.state.totalCharsTyped) * 100)
+            : 100;
 
-        // Current sentence progress
-        let currentCorrect = 0;
-        let currentIncorrect = 0;
-        for (let i = 0; i < input.length && i < target.length; i++) {
-            if (charsMatch(input[i], target[i])) {
-                currentCorrect++;
-            } else {
-                currentIncorrect++;
-            }
-        }
-
-        const totalCorrect = this.state.correctChars + currentCorrect;
-        const totalChars = this.state.completedChars + input.length;
-
-        const wpm = elapsed > 0 ? Math.round((totalCorrect / 5) / elapsed) : 0;
-        const acc = totalChars > 0 ? Math.round((totalCorrect / totalChars) * 100) : 100;
-
-        return { wpm, accuracy: acc, chars: totalChars };
+        return { wpm, accuracy: acc, correctChars: this.state.correctChars };
     }
 
     calcFinalStats() {
-        // Get current input for partial sentence
-        const input = this.els.typingInput.value;
-        const target = this.state.typingSentence;
-
-        // Count correct chars in current (unfinished) sentence
-        let currentCorrect = 0;
-        for (let i = 0; i < input.length && i < target.length; i++) {
-            if (charsMatch(input[i], target[i])) {
-                currentCorrect++;
-            }
-        }
-
-        // Total correct = completed sentences + current sentence progress
-        const totalCorrect = this.state.correctChars + currentCorrect;
-        const totalChars = this.state.completedChars + input.length;
-
         const mins = this.state.duration / 60;
-        const wpm = mins > 0 ? Math.round((totalCorrect / 5) / mins) : 0;
-        const acc = totalChars > 0 ? Math.round((totalCorrect / totalChars) * 100) : 100;
+        const wpm = Math.round((this.state.correctChars / 5) / mins);
+        const acc = this.state.totalCharsTyped > 0
+            ? Math.round((this.state.correctChars / this.state.totalCharsTyped) * 100)
+            : 100;
 
         return {
             wpm,
             accuracy: acc,
-            totalChars: totalCorrect,
-            words: this.state.completedWords
+            correctChars: this.state.correctChars,
+            correctWords: this.state.correctWords
         };
     }
 }
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
     window.fastFingers = new FastFingers();

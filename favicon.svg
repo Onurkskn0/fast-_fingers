@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFB347"/>
+      <stop offset="100%" stop-color="#E69420"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="url(#bg)"/>
+  
+  <!-- Keyboard key outline -->
+  <rect x="3" y="3" width="26" height="26" rx="4" fill="none" stroke="url(#accent)" stroke-width="1.5"/>
+  
+  <!-- Lightning bolt / speed symbol -->
+  <path d="M18 6 L12 16 L16 16 L14 26 L22 14 L17 14 L20 6 Z" fill="url(#accent)"/>
+</svg>

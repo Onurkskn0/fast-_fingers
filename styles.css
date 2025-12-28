@@ -515,35 +515,40 @@ kbd {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    gap: 0;
 }
 
-.char {
+/* Word-based styling */
+.word {
     display: inline-block;
+    padding: 0.1em 0.2em;
+    margin: 0.1em;
+    border-radius: var(--radius-sm);
     transition: all var(--duration-fast);
 }
 
-.char--current {
+.word-space {
+    display: inline;
+}
+
+.word--current {
     background: var(--accent);
     color: var(--bg);
-    border-radius: 2px;
 }
 
-.char--correct {
+.word--current.word--error {
+    background: var(--error);
+    color: #fff;
+}
+
+.word--correct {
     color: var(--success);
 }
 
-.char--incorrect {
+.word--incorrect {
     color: var(--error);
-    text-decoration: underline wavy;
-}
-
-.char--punctuation {
-    opacity: 0.4;
-}
-
-.char--punctuation.char--correct {
-    opacity: 0.6;
-    color: var(--success);
+    text-decoration: line-through;
+    opacity: 0.7;
 }
 
 /* Input */
