@@ -636,7 +636,7 @@ class FastFingers {
     updateLiveStats() {
         const stats = this.calcLiveStats();
         this.els.liveWpm.textContent = stats.wpm;
-        this.els.liveAccuracy.textContent = stats.accuracy;
+        this.els.liveAccuracy.textContent = `${stats.accuracy}%`;
         this.els.liveChars.textContent = stats.correctChars;
 
         const pb = this.getPersonalBest();
