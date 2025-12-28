@@ -19,8 +19,149 @@ function turkishToLower(str) {
     return result;
 }
 
+function stripPunctuation(str) {
+    return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").replace(/\s{2,}/g, " ");
+}
+
 function wordsMatch(input, target) {
-    return turkishToLower(input.trim()) === turkishToLower(target.trim());
+    const cleanInput = stripPunctuation(input.trim());
+    const cleanTarget = stripPunctuation(target.trim());
+    return turkishToLower(cleanInput) === turkishToLower(cleanTarget);
+}
+
+class SoundManager {
+    constructor() {
+        this.ctx = null;
+        this.enabled = localStorage.getItem('ff_sound') !== 'off';
+        this.keyclickEnabled = localStorage.getItem('ff_keyclick') !== 'off';
+
+        // Frequencies for sounds
+        this.sounds = {
+            tick: [800, 0.05],     // High short beep
+            error: [150, 0.15],    // Low thud
+            achievement: [
+                [523.25, 0.1], // C5
+                [659.25, 0.1], // E5
+                [783.99, 0.2]  // G5
+            ],
+            warning: [400, 0.1]    // Warning beep
+        };
+    }
+
+    init() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+
+
+    playTone(freq, duration, type = 'sine', time = 0) {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime + time);
+
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime + time);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + time + duration);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(this.ctx.currentTime + time);
+        osc.stop(this.ctx.currentTime + time + duration);
+    }
+
+    playTick() {
+        if (!this.enabled) return;
+        this.init();
+        this.playTone(...this.sounds.tick, 'sine');
+    }
+
+    playError() {
+        if (!this.enabled) return;
+        this.init();
+
+        // Custom error sound: Low pitch slide down (like a "bonk")
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.15); // Slide down
+
+        // Increased gain for louder volume
+        gain.gain.setValueAtTime(0.35, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+    }
+
+    playAchievement() {
+        if (!this.enabled) return;
+        this.init();
+        let time = 0;
+        this.sounds.achievement.forEach(([freq, dur]) => {
+            this.playTone(freq, dur, 'sine', time);
+            time += dur;
+        });
+    }
+
+    playWarning() {
+        if (!this.enabled) return;
+        this.init();
+        this.playTone(...this.sounds.warning, 'square');
+    }
+
+    playKeyclick() {
+        if (!this.enabled || !this.keyclickEnabled) return;
+        this.init();
+
+        if (!this.ctx) return;
+
+        // "Tick" sound: High pitch, very short, elegant
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        // Higher pitch for "tick" rather than "thock"
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.03);
+
+        // Very fast decay for crispness, lower volume
+        gain.gain.setValueAtTime(0.08, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.03);
+    }
+
+
+
+    toggle() {
+        this.enabled = !this.enabled;
+        localStorage.setItem('ff_sound', this.enabled ? 'on' : 'off');
+        return this.enabled;
+    }
+
+    toggleKeyclick() {
+        this.keyclickEnabled = !this.keyclickEnabled;
+        localStorage.setItem('ff_keyclick', this.keyclickEnabled ? 'on' : 'off');
+        return this.keyclickEnabled;
+    }
 }
 
 // ═══════════════════════════════════════════
@@ -29,6 +170,8 @@ function wordsMatch(input, target) {
 
 class FastFingers {
     constructor() {
+        this.soundManager = new SoundManager();
+
         this.els = {
             startScreen: document.getElementById('startScreen'),
             typingArea: document.getElementById('typingArea'),
@@ -56,7 +199,13 @@ class FastFingers {
             pbWpm: document.getElementById('pbWpm'),
             pbAccuracy: document.getElementById('pbAccuracy'),
             pbChars: document.getElementById('pbChars'),
-            submitBtn: document.getElementById('submitBtn')
+            submitBtn: document.getElementById('submitBtn'),
+            soundToggle: document.getElementById('soundToggle'),
+            keyclickToggle: document.getElementById('keyclickToggle'),
+            shareBtn: document.getElementById('shareBtn'),
+            pauseOverlay: document.getElementById('pauseOverlay'),
+            resumeBtn: document.getElementById('resumeBtn'),
+            quitBtn: document.getElementById('quitBtn')
         };
 
         this.state = {
@@ -92,7 +241,10 @@ class FastFingers {
             startTime: null,
             timeRemaining: 30,
             isRunning: false,
-            timerInterval: null
+            isPaused: false,
+            pauseTime: null,
+            timerInterval: null,
+            lastWarnSecond: 5
         };
 
         // Difficulty thresholds based on WPM
@@ -110,6 +262,7 @@ class FastFingers {
         await this.loadSentences();
         this.loadTheme();
         this.loadPersonalBest();
+        this.loadSoundState();
         this.bindEvents();
         this.els.timer = this.els.countdown?.closest('.timer');
     }
@@ -290,6 +443,7 @@ class FastFingers {
         const isNewRecord = !current || stats.wpm > current.wpm;
 
         if (isNewRecord) {
+            this.soundManager.playAchievement();
             localStorage.setItem(key, JSON.stringify({
                 wpm: stats.wpm,
                 accuracy: stats.accuracy,
@@ -327,6 +481,42 @@ class FastFingers {
     }
 
     // ═══════════════════════════════════════════
+    // SOUND
+    // ═══════════════════════════════════════════
+
+    loadSoundState() {
+        // Main sound
+        const soundEnabled = localStorage.getItem('ff_sound') !== 'off';
+        this.updateSoundUI(soundEnabled);
+
+        // Keyclick sound
+        const keyclickEnabled = localStorage.getItem('ff_keyclick') !== 'off';
+        this.updateKeyclickUI(keyclickEnabled);
+    }
+
+    toggleSound() {
+        const isEnabled = this.soundManager.toggle();
+        this.updateSoundUI(isEnabled);
+    }
+
+    updateSoundUI(isEnabled) {
+        if (!this.els.soundToggle) return;
+        this.els.soundToggle.setAttribute('data-sound', isEnabled ? 'on' : 'off');
+        this.els.soundToggle.style.opacity = isEnabled ? '1' : '0.5';
+    }
+
+    toggleKeyclick() {
+        const isEnabled = this.soundManager.toggleKeyclick();
+        this.updateKeyclickUI(isEnabled);
+    }
+
+    updateKeyclickUI(isEnabled) {
+        if (!this.els.keyclickToggle) return;
+        this.els.keyclickToggle.setAttribute('data-keyclick', isEnabled ? 'on' : 'off');
+        this.els.keyclickToggle.style.opacity = isEnabled ? '1' : '0.5';
+    }
+
+    // ═══════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════
 
@@ -336,19 +526,24 @@ class FastFingers {
         this.els.retryBtn?.addEventListener('click', () => this.start());
         this.els.homeBtn?.addEventListener('click', () => this.goHome());
 
+        // Sound toggles
+        this.els.soundToggle?.addEventListener('click', () => this.toggleSound());
+        this.els.keyclickToggle?.addEventListener('click', () => this.toggleKeyclick());
+
+        // Share and pause buttons
+        this.els.shareBtn?.addEventListener('click', () => this.shareResult());
+        this.els.resumeBtn?.addEventListener('click', () => this.resume());
+        this.els.quitBtn?.addEventListener('click', () => this.goHome());
+
         this.els.modeBtns.forEach(btn => {
             btn.addEventListener('click', () => this.selectMode(btn));
         });
 
         this.els.typingInput?.addEventListener('input', (e) => this.handleInput(e));
 
+        // Word submission (Space/Enter)
         this.els.typingInput?.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.goHome();
-                return;
-            }
-
-            if ((e.key === ' ' || e.key === 'Enter') && this.state.isRunning) {
+            if ((e.key === ' ' || e.key === 'Enter') && this.state.isRunning && !this.state.isPaused) {
                 e.preventDefault();
                 this.submitWord();
             }
@@ -358,14 +553,42 @@ class FastFingers {
 
         // Mobile submit button
         this.els.submitBtn?.addEventListener('click', () => {
-            if (this.state.isRunning) {
+            if (this.state.isRunning && !this.state.isPaused) {
                 this.submitWord();
                 this.els.typingInput?.focus();
             }
         });
 
+        // Global ESC key handler (capture phase to work when input is focused)
         document.addEventListener('keydown', (e) => {
-            // Start screen shortcuts
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Typing screen - toggle pause
+                if (this.state.isRunning) {
+                    if (this.state.isPaused) {
+                        this.resume();
+                    } else {
+                        this.pause();
+                    }
+                    return;
+                }
+
+                // Start screen shortcuts
+                if (!this.els.startScreen.classList.contains('hidden')) {
+                    // ESC does nothing on start screen
+                    return;
+                }
+
+                // Results screen - go home
+                if (!this.els.resultsScreen.classList.contains('hidden')) {
+                    this.goHome();
+                    return;
+                }
+            }
+
+            // Start screen shortcuts (Enter/Space)
             if (!this.els.startScreen.classList.contains('hidden')) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
@@ -373,20 +596,17 @@ class FastFingers {
                 }
             }
 
-            // Results screen shortcuts
+            // Results screen shortcuts (Enter/Space for retry)
             if (!this.els.resultsScreen.classList.contains('hidden')) {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    this.start(); // Retry
-                } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    this.goHome();
+                    this.start();
                 }
             }
-        });
+        }, true); // Capture phase
 
         window.addEventListener('focus', () => {
-            if (this.state.isRunning) this.els.typingInput?.focus();
+            if (this.state.isRunning && !this.state.isPaused) this.els.typingInput?.focus();
         });
     }
 
@@ -414,6 +634,9 @@ class FastFingers {
         this.state.timeRemaining = this.state.duration;
         this.state.startTime = null;
         this.state.isRunning = true;
+        this.state.isPaused = false;
+        this.state.pauseTime = null;
+        this.state.lastWarnSecond = 5;
 
         this.els.startScreen.classList.add('hidden');
         this.els.resultsScreen.classList.add('hidden');
@@ -451,11 +674,147 @@ class FastFingers {
 
     goHome() {
         this.state.isRunning = false;
+        this.state.isPaused = false;
         if (this.state.timerInterval) clearInterval(this.state.timerInterval);
 
+        this.els.pauseOverlay?.classList.add('hidden');
         this.els.typingArea.classList.add('hidden');
         this.els.resultsScreen.classList.add('hidden');
         this.els.startScreen.classList.remove('hidden');
+    }
+
+    // ═══════════════════════════════════════════
+    // PAUSE / RESUME
+    // ═══════════════════════════════════════════
+
+    pause() {
+        if (!this.state.isRunning || this.state.isPaused) return;
+
+        this.state.isPaused = true;
+        this.state.pauseTime = Date.now();
+        this.els.pauseOverlay?.classList.remove('hidden');
+    }
+
+    resume() {
+        if (!this.state.isPaused) return;
+
+        // Adjust start time to account for pause duration
+        const pauseDuration = Date.now() - this.state.pauseTime;
+        this.state.startTime += pauseDuration;
+
+        this.state.isPaused = false;
+        this.state.pauseTime = null;
+        this.els.pauseOverlay?.classList.add('hidden');
+        this.els.typingInput?.focus();
+    }
+
+    // ═══════════════════════════════════════════
+    // SHARE
+    // ═══════════════════════════════════════════
+
+    async shareResult() {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 800;
+        canvas.height = 420;
+
+        // Background
+        ctx.fillStyle = '#0D0D0D';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Border
+        ctx.strokeStyle = '#FFB347';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+        // Logo
+        ctx.fillStyle = '#FFB347';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('▸ fastfingers', canvas.width / 2, 70);
+
+        // WPM (main stat)
+        ctx.fillStyle = '#FFB347';
+        ctx.font = 'bold 120px sans-serif';
+        ctx.fillText(this.els.finalWpm.textContent, canvas.width / 2, 200);
+
+        ctx.fillStyle = '#7A7A6C';
+        ctx.font = '20px monospace';
+        ctx.fillText('WPM', canvas.width / 2, 230);
+
+        // Stats row
+        const stats = [
+            { label: 'DOĞRULUK', value: this.els.finalAccuracy.textContent },
+            { label: 'KARAKTER', value: this.els.finalChars.textContent },
+            { label: 'KELİME', value: this.els.finalWords.textContent }
+        ];
+
+        const startX = 160;
+        const gap = 240;
+
+        stats.forEach((stat, i) => {
+            const x = startX + i * gap;
+            ctx.fillStyle = '#E8E4D9';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText(stat.value, x, 310);
+
+            ctx.fillStyle = '#7A7A6C';
+            ctx.font = '14px monospace';
+            ctx.fillText(stat.label, x, 340);
+        });
+
+        // Footer
+        ctx.fillStyle = '#7A7A6C';
+        ctx.font = '14px monospace';
+        ctx.fillText(`${this.state.duration}s mod`, canvas.width / 2, 390);
+
+        // Create blob and copy/download
+        canvas.toBlob(async (blob) => {
+            try {
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                this.showToast('Sonuç panoya kopyalandı! 📋');
+            } catch (err) {
+                // Fallback: download
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `fastfingers-${this.els.finalWpm.textContent}wpm.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }, 'image/png');
+    }
+
+    showToast(message, duration = 3000) {
+        let container = document.querySelector('.toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `
+            <span>✨</span>
+            <span>${message}</span>
+        `;
+
+        container.appendChild(toast);
+
+        // Remove after duration
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                toast.remove();
+                if (container.children.length === 0) {
+                    container.remove();
+                }
+            });
+        }, duration);
     }
 
     finish() {
@@ -489,7 +848,7 @@ class FastFingers {
         this.state.startTime = Date.now();
 
         this.state.timerInterval = setInterval(() => {
-            if (!this.state.isRunning) return;
+            if (!this.state.isRunning || this.state.isPaused) return;
 
             const elapsed = (Date.now() - this.state.startTime) / 1000;
             this.state.timeRemaining = Math.max(0, this.state.duration - elapsed);
@@ -521,8 +880,11 @@ class FastFingers {
         if (!this.state.isRunning) return;
 
         if (!this.state.startTime) {
+            this.soundManager.init(); // Init audio context on first interaction
             this.startTimer();
         }
+
+        this.soundManager.playKeyclick();
 
         const input = e.target.value;
 
@@ -548,9 +910,13 @@ class FastFingers {
         this.state.totalCharsTyped += targetWord.length;
 
         const isCorrect = wordsMatch(input, targetWord);
+
         if (isCorrect) {
+            this.soundManager.playTick();
             this.state.correctWords++;
             this.state.correctChars += targetWord.length;
+        } else {
+            this.soundManager.playError();
         }
         // If not correct, correctChars stays 0 for this word
 
@@ -649,6 +1015,15 @@ class FastFingers {
                 charsStat?.classList.add('live-stat--beating');
             } else {
                 charsStat?.classList.remove('live-stat--beating');
+            }
+        }
+
+        // Warning sound check
+        if (this.state.isRunning && !this.state.isPaused && this.state.timeRemaining <= 5 && this.state.timeRemaining > 0) {
+            const currentSec = Math.ceil(this.state.timeRemaining);
+            if (currentSec <= this.state.lastWarnSecond) {
+                this.soundManager.playWarning();
+                this.state.lastWarnSecond = currentSec - 1;
             }
         }
     }

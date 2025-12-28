@@ -246,6 +246,80 @@ kbd {
     color: var(--accent);
 }
 
+/* Sound Toggle */
+.sound-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast);
+}
+
+.sound-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--fg-muted);
+    transition: all var(--duration-fast);
+}
+
+/* Show on icon by default, off icon when sound is off */
+.sound-icon--on {
+    display: block;
+}
+
+.sound-icon--off {
+    display: none;
+}
+
+[data-sound="off"] .sound-icon--on {
+    display: none;
+}
+
+[data-sound="off"] .sound-icon--off {
+    display: block;
+}
+
+.sound-btn:hover {
+    background: var(--accent-glow);
+}
+
+.sound-btn:hover .sound-icon {
+    color: var(--accent);
+}
+
+/* Keyclick Toggle */
+.keyclick-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast);
+}
+
+.keyclick-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--fg-muted);
+    transition: all var(--duration-fast);
+}
+
+.keyclick-btn:hover {
+    background: var(--accent-glow);
+}
+
+.keyclick-btn:hover .keyclick-icon {
+    color: var(--accent);
+}
+
+/* Dim when keyclick is off */
+[data-keyclick="off"] .keyclick-icon {
+    opacity: 0.4;
+}
+
 /* ═══════════════════════════════════════════
    SCREENS
    ═══════════════════════════════════════════ */
@@ -820,6 +894,17 @@ kbd {
     color: var(--accent);
 }
 
+.btn--accent {
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+}
+
+.btn--accent:hover {
+    background: var(--accent);
+    color: var(--bg);
+}
+
 /* ═══════════════════════════════════════════
    FOOTER
    ═══════════════════════════════════════════ */
@@ -907,6 +992,84 @@ kbd {
 }
 
 /* Reduced motion */
+/* ═══════════════════════════════════════════
+   PAUSE OVERLAY
+   ═══════════════════════════════════════════ */
+
+.pause-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s var(--ease-out);
+}
+
+.pause-modal {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2xl);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-md);
+    animation: scaleIn 0.3s var(--ease-out);
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.pause-icon {
+    font-size: 3rem;
+    color: var(--accent);
+}
+
+.pause-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+}
+
+.pause-hint {
+    color: var(--fg-muted);
+    font-size: 0.875rem;
+}
+
+.pause-actions {
+    display: flex;
+    gap: var(--space-md);
+    margin-top: var(--space-md);
+}
+
+.pause-shortcut {
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    margin-top: var(--space-sm);
+}
+
+.pause-shortcut kbd {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 6px;
+    font-family: var(--font-mono);
+}
+
 @media (prefers-reduced-motion: reduce) {
 
     *,
@@ -915,4 +1078,89 @@ kbd {
         animation-duration: 0.01ms !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* 
+=============================================
+   TOAST NOTIFICATION & NEW SHARE BUTTON
+=============================================
+*/
+
+/* Toast Container */
+.toast-container {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* Toast Item */
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: rgba(13, 13, 13, 0.95);
+    color: var(--accent);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md);
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+
+    /* Animation */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: toastReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.toast.hiding {
+    animation: toastHide 0.3s ease-in forwards;
+}
+
+@keyframes toastReveal {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes toastHide {
+    to {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+/* Share Button Redesign */
+.btn--share {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-weight: 600;
+    /* Match other buttons */
+    transition: all 0.3s ease;
+}
+
+.btn--share:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(var(--accent), 0.05);
+    box-shadow: 0 0 20px var(--accent-glow);
+    transform: translateY(-2px);
+}
+
+.btn--share svg {
+    width: 1.2em;
+    height: 1.2em;
+    stroke-width: 2;
 }
