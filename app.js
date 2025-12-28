@@ -540,7 +540,8 @@ class FastFingers {
         const input = this.els.typingInput.value.trim();
         const targetWord = this.state.words[this.state.currentWordIndex];
 
-        if (!targetWord) return;
+        // Don't allow skipping without typing
+        if (!input || !targetWord) return;
 
         this.state.totalWordsTyped++;
         this.state.totalCharsTyped += input.length;
