@@ -544,21 +544,15 @@ class FastFingers {
         if (!input || !targetWord) return;
 
         this.state.totalWordsTyped++;
-        this.state.totalCharsTyped += input.length;
+        // Count target word length as expected chars (so incomplete words hurt accuracy)
+        this.state.totalCharsTyped += targetWord.length;
 
         const isCorrect = wordsMatch(input, targetWord);
         if (isCorrect) {
             this.state.correctWords++;
             this.state.correctChars += targetWord.length;
-        } else {
-            let correctChars = 0;
-            const inputLower = turkishToLower(input);
-            const targetLower = turkishToLower(targetWord);
-            for (let i = 0; i < Math.min(inputLower.length, targetLower.length); i++) {
-                if (inputLower[i] === targetLower[i]) correctChars++;
-            }
-            this.state.correctChars += correctChars;
         }
+        // If not correct, correctChars stays 0 for this word
 
         this.markWordCompleted(isCorrect);
         this.state.currentWordIndex++;
