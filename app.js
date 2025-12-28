@@ -525,6 +525,14 @@ class FastFingers {
         }
 
         const input = e.target.value;
+
+        // Check for space at end - submit word (mobile support)
+        if (input.endsWith(' ')) {
+            e.target.value = input.trimEnd(); // Remove the space
+            this.submitWord();
+            return;
+        }
+
         this.updateWordHighlight(input);
     }
 

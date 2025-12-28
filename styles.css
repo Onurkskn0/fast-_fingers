@@ -183,6 +183,14 @@ kbd {
     animation: blink 1s step-end infinite;
 }
 
+/* Disable blinking cursor on mobile - distracting */
+@media (hover: none) and (pointer: coarse) {
+    .logo__cursor {
+        animation: none;
+        opacity: 1;
+    }
+}
+
 @keyframes blink {
 
     0%,
@@ -599,8 +607,8 @@ kbd {
     width: 48px;
     height: 48px;
     flex-shrink: 0;
-    font-size: 1.5rem;
-    font-weight: bold;
+    font-size: 1.25rem;
+    line-height: 1;
     background: var(--accent);
     color: var(--bg);
     border-radius: var(--radius-md);
