@@ -20,7 +20,7 @@ function turkishToLower(str) {
 }
 
 function stripPunctuation(str) {
-    return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").replace(/\s{2,}/g, " ");
+    return str.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").replace(/\s{2,}/g, " ");
 }
 
 function wordsMatch(input, target) {
