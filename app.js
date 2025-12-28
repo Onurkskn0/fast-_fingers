@@ -55,7 +55,8 @@ class FastFingers {
             newRecord: document.getElementById('newRecord'),
             pbWpm: document.getElementById('pbWpm'),
             pbAccuracy: document.getElementById('pbAccuracy'),
-            pbChars: document.getElementById('pbChars')
+            pbChars: document.getElementById('pbChars'),
+            submitBtn: document.getElementById('submitBtn')
         };
 
         this.state = {
@@ -118,23 +119,71 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     async loadSentences() {
+        // Embedded sentences (fallback for file:// protocol)
+        const embeddedData = {
+            easy: [
+                "Bugün hava çok güzel.",
+                "Kedim uyumayı seviyor.",
+                "Çay içmek istiyorum.",
+                "Yarın okula gideceğim.",
+                "Bu kitap çok güzel.",
+                "Annem yemek yapıyor.",
+                "Babam işe gitti.",
+                "Arkadaşım beni aradı.",
+                "Pencereyi açar mısın?",
+                "Kapıyı kapat lütfen.",
+                "Su içmek istiyorum.",
+                "Kahvaltı hazır mı?",
+                "Akşam yemeği nedir?",
+                "Saat kaç oldu?",
+                "Bugün pazartesi günü.",
+                "Hava soğuk olmuş.",
+                "Güneş çok parlak.",
+                "Yağmur yağacak mı?",
+                "Kar yağıyor dışarıda.",
+                "Rüzgar çok sert esiyor."
+            ],
+            medium: [
+                "Teknoloji hayatımızı her geçen gün daha fazla etkiliyor.",
+                "Kitap okumak, hayal gücünü geliştiren güzel bir aktivitedir.",
+                "Spor yapmak hem fiziksel, hem de zihinsel sağlık için önemlidir.",
+                "Müzik dinlemek, stresi azaltmanın en etkili yollarından biridir.",
+                "Yabancı dil öğrenmek yeni kapılar açar ve ufku genişletir.",
+                "Doğa yürüyüşleri, temiz hava almak için harika bir fırsattır.",
+                "Sağlıklı beslenme alışkanlıkları küçük yaşta kazanılmalıdır.",
+                "Her gün düzenli egzersiz yapmak, sağlıklı yaşamın anahtarıdır.",
+                "Yazılım geliştirme, sürekli öğrenmeyi gerektiren bir meslektir.",
+                "Programlama, mantıksal düşünme yeteneğini önemli ölçüde geliştirir."
+            ],
+            hard: [
+                "Yapay zeka teknolojisi; günümüzde hızla gelişmeye devam etmekte, sağlık ve eğitim gibi birçok sektörü kökten dönüştürmektedir.",
+                "Kuantum bilgisayarlar, geleneksel silikon tabanlı işlemcilerin çözemediği karmaşık problemleri saniyeler içinde çözebilir.",
+                "Sürdürülebilir kalkınma hedefleri, ekonomik büyüme ile çevresel koruma arasında hassas bir denge kurmayı amaçlamaktadır.",
+                "Makine öğrenmesi algoritmaları, devasa veri setlerinden anlamlı örüntüler çıkararak stratejik kararlar alabilir.",
+                "Blockchain teknolojisi; merkeziyetsiz, değiştirilemez ve şeffaf işlem kayıtları sağlayarak finans dünyasını sarsmaktadır."
+            ],
+            expert: [
+                "Epistemoloji; bilginin doğası, kaynağı, kapsamı ve geçerliliği üzerine derinlemesine sorgulamalar yapan felsefi bir disiplindir.",
+                "Heisenberg'in Belirsizlik İlkesi'ne göre; bir atom altı parçacığın konumu ve momentumu aynı anda, kesin bir doğrulukla ölçülemez.",
+                "Schrödinger'in Kedisi düşünce deneyi, kuantum süperpozisyon ilkesini açıklamak için kullanılır; kedi, gözlem yapılana kadar hem ölü hem de canlı durumundadır.",
+                "Görelilik Teorisi'ne göre; ışık hızına yaklaşan bir cisim için zaman, durgun bir gözlemciye kıyasla daha yavaş akar.",
+                "Nöromorfik mühendislik; geleneksel von Neumann mimarisinin darboğazlarını aşmak için, insan beyninin nöron yapısını taklit eden donanımlar geliştirmeyi hedefler."
+            ]
+        };
+
         try {
             const response = await fetch('sentences.json');
+            if (!response.ok) throw new Error('HTTP error');
             const data = await response.json();
             this.state.sentencePools = {
-                easy: data.easy || [],
-                medium: data.medium || [],
-                hard: data.hard || [],
-                expert: data.expert || []
+                easy: data.easy || embeddedData.easy,
+                medium: data.medium || embeddedData.medium,
+                hard: data.hard || embeddedData.hard,
+                expert: data.expert || embeddedData.expert
             };
         } catch (error) {
-            console.error('Failed to load sentences:', error);
-            this.state.sentencePools = {
-                easy: ["Bugün hava çok güzel", "Kedim uyumayı seviyor"],
-                medium: ["Teknoloji hayatımızı etkiliyor"],
-                hard: ["Yapay zeka hızla gelişiyor"],
-                expert: ["Kuantum bilgisayarlar gelecekte önemli olacak"]
-            };
+            console.log('Using embedded sentences (file:// mode)');
+            this.state.sentencePools = embeddedData;
         }
     }
 
@@ -306,6 +355,14 @@ class FastFingers {
         });
 
         this.els.typingInput?.addEventListener('paste', (e) => e.preventDefault());
+
+        // Mobile submit button
+        this.els.submitBtn?.addEventListener('click', () => {
+            if (this.state.isRunning) {
+                this.submitWord();
+                this.els.typingInput?.focus();
+            }
+        });
 
         document.addEventListener('keydown', (e) => {
             // Start screen shortcuts
