@@ -285,6 +285,7 @@ kbd {
 .high-contrast .terminal__header,
 .high-contrast .stats-card {
     border-width: 2px;
+    transition: border-width 0.15s ease;
 }
 
 .high-contrast .scanlines,
@@ -292,50 +293,77 @@ kbd {
     display: none;
 }
 
-/* LARGE TEXT MODE */
-/* LARGE TEXT MODE */
-html.large-text {
-    font-size: 19px;
-    /* Reduced from 22px for better usability */
+/* LARGE TEXT MODE → READABILITY MODE + SIZE */
+/* Typography + moderate size increase on key elements */
+
+.large-text {
+    letter-spacing: 0.03em;
 }
 
-.large-text .container {
-    max-width: 800px;
-    /* More width to accommodate larger text */
-    padding: var(--space-md);
-    /* Reduce padding to save screen space */
+/* Sentences: The core reading experience */
+.large-text .sentence {
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    line-height: 2;
+    word-spacing: 0.1em;
+}
+
+.large-text .typing-input {
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
 }
 
 .large-text .typing-box {
-    padding: var(--space-xl);
-    min-height: auto;
-    /* Remove rigid height */
+    padding: var(--space-2xl) var(--space-xl);
 }
 
-.large-text .sentence {
-    line-height: 1.6;
-    /* Tighter line height prevents excessive scrolling */
-    font-size: 1.5rem;
-    /* Explicit comfortable reading size */
-}
-
+/* Stats: Bigger, bolder, clearer */
 .large-text .stat-item__value {
     font-size: 2rem;
-    /* Cap stats size */
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 
-.large-text .achievement-modal__grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1.5rem;
+.large-text .stat-item__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
 }
 
-.large-text .achievement-card {
-    padding: 1rem;
+/* Terminal: Improved spacing + size */
+.large-text .terminal__line {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    letter-spacing: 0.04em;
 }
 
-.large-text .a11y-panel {
-    width: auto;
-    min-width: 280px;
+/* Footer hints */
+.large-text kbd {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.large-text .key-item {
+    letter-spacing: 0.03em;
+}
+
+/* Logo & Header Icons */
+.large-text .logo {
+    font-size: 1.5rem;
+}
+
+.large-text .theme-icon,
+.large-text .sound-icon,
+.large-text .keyclick-icon,
+.large-text .a11y-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+
+/* Container: Slightly wider for breathing room */
+.large-text .container {
+    max-width: 880px;
 }
 
 
@@ -1149,9 +1177,14 @@ html.large-text {
    ═══════════════════════════════════════════ */
 
 .footer {
-    margin-top: auto;
-    padding: var(--space-xl) 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: var(--space-md) 0;
     text-align: center;
+    background: var(--bg);
+    z-index: 10;
 }
 
 .key-legend {
@@ -1266,7 +1299,7 @@ kbd {
 .pause-overlay {
     position: fixed;
     inset: 0;
-    z-index: 100;
+    z-index: 2000;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(8px);
     display: flex;
@@ -1503,7 +1536,7 @@ kbd {
 .achievement-modal {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 2000;
     display: flex;
     align-items: center;
     justify-content: center;
