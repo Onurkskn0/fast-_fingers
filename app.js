@@ -969,6 +969,12 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     start() {
+        // Clear any existing timer interval first
+        if (this.state.timerInterval) {
+            clearInterval(this.state.timerInterval);
+            this.state.timerInterval = null;
+        }
+
         // Reset all state
         this.state.usedSentences.clear();
         this.state.currentDifficulty = 'easy'; // Start easy
