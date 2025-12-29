@@ -105,6 +105,7 @@ const SENTENCES_DATA = {
         "hermenötik döngü bir metnin veya olgunun bütününü anlamak için parçalarına parçalarını anlamak içinse bütününe bakmak gerektiğini vurgular",
         "siberkondria internetten sağlıkla ilgili araştırma yaparak kişinin kendi kendine yanlış teşhis koyması ve anksiyete yaşaması durumudur",
         "metafizik spekülasyonlar fiziksel dünyanın ötesindeki gerçekliğin doğasını varlığın ilk nedenlerini ve evrensel ilkeleri sorgular",
+        "KARIMI ÇOOOOKKKKK SEVİYORUMMMMMMMM",
         "biyoetik tartışmalar klonlama kök hücre araştırmaları ve genetik mühendisliği gibi konuların ahlaki ve hukuki sınırlarını belirlemeye çalışır"
     ]
 };
