@@ -110,10 +110,36 @@ class SoundManager {
     playAchievement() {
         if (!this.enabled) return;
         this.init();
+
+        // Louder and more celebratory achievement melody
+        const notes = [
+            [523.25, 0.15], // C5
+            [659.25, 0.15], // E5
+            [783.99, 0.25], // G5 (longer)
+            [1046.5, 0.3]   // C6 (higher octave, longest)
+        ];
+
         let time = 0;
-        this.sounds.achievement.forEach(([freq, dur]) => {
-            this.playTone(freq, dur, 'sine', time);
-            time += dur;
+        notes.forEach(([freq, dur]) => {
+            // Use higher gain for achievement
+            if (!this.ctx) return;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.ctx.currentTime + time);
+
+            // Louder than normal sounds
+            gain.gain.setValueAtTime(0.25, this.ctx.currentTime + time);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + time + dur);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(this.ctx.currentTime + time);
+            osc.stop(this.ctx.currentTime + time + dur);
+
+            time += dur * 0.8; // Slight overlap for richer sound
         });
     }
 
