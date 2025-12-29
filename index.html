@@ -28,52 +28,83 @@
                 <span class="logo__icon">▸</span>
                 <span class="logo__text">fastfingers</span>
             </div>
-            <button class="theme-btn" id="themeToggle" aria-label="Tema">
-                <!-- Sun icon (shown in dark mode) -->
-                <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <circle cx="12" cy="12" r="5" />
-                    <path
-                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
-                </svg>
-                <!-- Moon icon (shown in light mode) -->
-                <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-            </button>
-            <button class="sound-btn" id="soundToggle" aria-label="Ses">
-                <!-- Sound on icon -->
-                <svg class="sound-icon sound-icon--on" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                </svg>
-                <!-- Sound off icon -->
-                <svg class="sound-icon sound-icon--off" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    stroke-width="2">
-                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                    <line x1="23" y1="9" x2="17" y2="15" />
-                    <line x1="17" y1="9" x2="23" y2="15" />
-                </svg>
-            </button>
-            <button class="keyclick-btn" id="keyclickToggle" aria-label="Klavye Sesi">
-                <!-- Keyboard icon -->
-                <svg class="keyclick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <line x1="6" y1="8" x2="6" y2="8" />
-                    <line x1="10" y1="8" x2="10" y2="8" />
-                    <line x1="14" y1="8" x2="14" y2="8" />
-                    <line x1="18" y1="8" x2="18" y2="8" />
-                    <line x1="6" y1="12" x2="6" y2="12" />
-                    <line x1="18" y1="12" x2="18" y2="12" />
-                    <line x1="8" y1="16" x2="16" y2="16" />
-                </svg>
-            </button>
-            <button class="achievement-btn" id="achievementBtn" aria-label="Başarımlar">
-                <span class="achievement-btn__icon">🏆</span>
-                <span class="achievement-btn__count" id="achievementCount">0/12</span>
-            </button>
+
+            <div class="header-actions">
+                <div class="a11y-wrapper">
+                    <button class="a11y-btn" id="a11yToggle" aria-label="Erişilebilirlik Ayarları" aria-expanded="false"
+                        aria-controls="a11yPanel">
+                        <svg class="a11y-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path
+                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                            </path>
+                        </svg>
+                    </button>
+                    <div class="a11y-panel hidden" id="a11yPanel" role="dialog"
+                        aria-label="Erişilebilirlik Seçenekleri">
+                        <div class="a11y-option">
+                            <label for="highContrast" class="a11y-label">Yüksek Kontrast</label>
+                            <button class="toggle-switch" id="highContrastToggle" aria-pressed="false">
+                                <span class="toggle-switch__knob"></span>
+                            </button>
+                        </div>
+                        <div class="a11y-option">
+                            <label for="largeText" class="a11y-label">Büyük Yazı</label>
+                            <button class="toggle-switch" id="largeTextToggle" aria-pressed="false">
+                                <span class="toggle-switch__knob"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="theme-btn" id="themeToggle" aria-label="Tema">
+                    <!-- Sun icon (shown in dark mode) -->
+                    <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <circle cx="12" cy="12" r="5" />
+                        <path
+                            d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                    <!-- Moon icon (shown in light mode) -->
+                    <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+                <button class="sound-btn" id="soundToggle" aria-label="Ses">
+                    <!-- Sound on icon -->
+                    <svg class="sound-icon sound-icon--on" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                    </svg>
+                    <!-- Sound off icon -->
+                    <svg class="sound-icon sound-icon--off" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                        <line x1="23" y1="9" x2="17" y2="15" />
+                        <line x1="17" y1="9" x2="23" y2="15" />
+                    </svg>
+                </button>
+                <button class="keyclick-btn" id="keyclickToggle" aria-label="Klavye Sesi">
+                    <!-- Keyboard icon -->
+                    <svg class="keyclick-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="4" width="20" height="16" rx="2" />
+                        <line x1="6" y1="8" x2="6" y2="8" />
+                        <line x1="10" y1="8" x2="10" y2="8" />
+                        <line x1="14" y1="8" x2="14" y2="8" />
+                        <line x1="18" y1="8" x2="18" y2="8" />
+                        <line x1="6" y1="12" x2="6" y2="12" />
+                        <line x1="18" y1="12" x2="18" y2="12" />
+                        <line x1="8" y1="16" x2="16" y2="16" />
+                    </svg>
+                </button>
+                <button class="achievement-btn" id="achievementBtn" aria-label="Başarımlar">
+                    <span class="achievement-btn__icon">🏆</span>
+                    <span class="achievement-btn__count" id="achievementCount">0/12</span>
+                </button>
         </header>
 
         <!-- Start Screen -->
@@ -130,12 +161,11 @@
             <div class="duration-select">
                 <span class="duration-label">SÜRE:</span>
                 <div class="duration-btns">
-                    <button class="duration-btn" data-duration="15">15s</button>
-                    <button class="duration-btn" data-duration="30">30s</button>
-                    <button class="duration-btn" data-duration="60">60s</button>
-                    <button class="duration-btn" data-duration="-1"
-                        style="height: 38px; padding: 0 1rem; display: inline-flex; align-items: center; justify-content: center;"><span
-                            style="font-size: 2rem; transform: translateY(-3px);">∞</span></button>
+                    <button class="duration-btn" data-duration="15" aria-label="15 saniye süre">15s</button>
+                    <button class="duration-btn" data-duration="30" aria-label="30 saniye süre">30s</button>
+                    <button class="duration-btn" data-duration="60" aria-label="60 saniye süre">60s</button>
+                    <button class="duration-btn" data-duration="-1" aria-label="Sonsuz mod"><span
+                            class="infinite-icon">∞</span></button>
                 </div>
                 <script>
                     // Apply saved duration immediately to prevent UI flash

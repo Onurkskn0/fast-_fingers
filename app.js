@@ -578,6 +578,11 @@ class FastFingers {
             countdown: document.getElementById('countdown'),
             countdownProgress: document.getElementById('countdownProgress'),
             timer: null,
+            a11yToggle: document.getElementById('a11yToggle'),
+            a11yPanel: document.getElementById('a11yPanel'),
+            highContrastToggle: document.getElementById('highContrastToggle'),
+            largeTextToggle: document.getElementById('largeTextToggle'),
+
             themeToggle: document.getElementById('themeToggle'),
             startBtn: document.getElementById('startBtn'),
             retryBtn: document.getElementById('retryBtn'),
@@ -677,6 +682,7 @@ class FastFingers {
     async init() {
         await this.loadSentences();
         this.loadTheme();
+        this.loadAccessibility();
         this.loadPersonalBest();
         this.loadSoundState();
 
@@ -684,6 +690,62 @@ class FastFingers {
 
         this.bindEvents();
         this.els.timer = this.els.countdown?.closest('.timer');
+    }
+
+    loadAccessibility() {
+        // High Contrast
+        const isHighContrast = localStorage.getItem('ff_high_contrast') === 'true';
+        if (isHighContrast) {
+            document.documentElement.classList.add('high-contrast');
+            this.els.highContrastToggle.setAttribute('aria-pressed', 'true');
+        }
+
+        // Large Text
+        const isLargeText = localStorage.getItem('ff_large_text') === 'true';
+        if (isLargeText) {
+            document.documentElement.classList.add('large-text');
+            this.els.largeTextToggle.setAttribute('aria-pressed', 'true');
+        }
+
+        // Accessibility Panel Events
+        this.els.a11yToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = this.els.a11yPanel.classList.contains('hidden');
+            if (isHidden) {
+                this.els.a11yPanel.classList.remove('hidden');
+                this.els.a11yToggle.setAttribute('aria-expanded', 'true');
+            } else {
+                this.els.a11yPanel.classList.add('hidden');
+                this.els.a11yToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Close panel when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!this.els.a11yWrapper?.contains(e.target) && !this.els.a11yPanel?.classList.contains('hidden')) {
+                this.els.a11yPanel.classList.add('hidden');
+                this.els.a11yToggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Toggle High Contrast
+        this.els.highContrastToggle.addEventListener('click', () => {
+            const isPressed = this.els.highContrastToggle.getAttribute('aria-pressed') === 'true';
+            this.els.highContrastToggle.setAttribute('aria-pressed', !isPressed);
+            document.documentElement.classList.toggle('high-contrast');
+            localStorage.setItem('ff_high_contrast', !isPressed);
+        });
+
+        // Toggle Large Text
+        this.els.largeTextToggle.addEventListener('click', () => {
+            const isPressed = this.els.largeTextToggle.getAttribute('aria-pressed') === 'true';
+            this.els.largeTextToggle.setAttribute('aria-pressed', !isPressed);
+            document.documentElement.classList.toggle('large-text');
+            localStorage.setItem('ff_large_text', !isPressed);
+        });
+
+        // Add a11y wrapper to els for outside click detection
+        this.els.a11yWrapper = document.querySelector('.a11y-wrapper');
     }
 
     // ═══════════════════════════════════════════
