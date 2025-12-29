@@ -765,7 +765,7 @@ kbd {
 
 .new-record__stars {
     font-size: 0.75rem;
-    color: var(--accent);
+    color: inherit;
 }
 
 @keyframes popIn {
