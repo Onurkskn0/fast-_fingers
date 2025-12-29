@@ -29,6 +29,48 @@ function wordsMatch(input, target) {
     return turkishToLower(cleanInput) === turkishToLower(cleanTarget);
 }
 
+// Fisher-Yates Shuffle
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+/**
+ * ShuffleBag implementation for non-repeating random selection.
+ * Ensures all items are used once before repeating.
+ */
+class ShuffleBag {
+    constructor() {
+        this.items = [];
+        this.cursor = -1;
+    }
+
+    setItems(items) {
+        this.items = [...items];
+        this.cursor = this.items.length - 1; // Force shuffle on first use
+        this.shuffle();
+    }
+
+    shuffle() {
+        if (this.items.length === 0) return;
+        shuffleArray(this.items);
+        this.cursor = 0;
+    }
+
+    next() {
+        if (this.items.length === 0) return null;
+
+        if (this.cursor >= this.items.length) {
+            this.shuffle();
+        }
+
+        return this.items[this.cursor++];
+    }
+}
+
 class SoundManager {
     constructor() {
         this.ctx = null;
@@ -56,8 +98,6 @@ class SoundManager {
             this.ctx.resume();
         }
     }
-
-
 
     playTone(freq, duration, type = 'sine', time = 0) {
         if (!this.ctx) return;
@@ -570,7 +610,6 @@ class FastFingers {
             achievementGrid: document.getElementById('achievementGrid'),
             achievementClose: document.getElementById('achievementClose'),
             escHint: document.getElementById('escHint'),
-            escHint: document.getElementById('escHint'),
             enterHintItem: document.getElementById('enterHintItem'),
             spaceHintItem: document.getElementById('spaceHintItem')
         };
@@ -584,8 +623,13 @@ class FastFingers {
                 expert: []
             },
 
-            // Track used sentences to prevent repeats
-            usedSentences: new Set(),
+            // Shuffle bags for each difficulty
+            bags: {
+                easy: new ShuffleBag(),
+                medium: new ShuffleBag(),
+                hard: new ShuffleBag(),
+                expert: new ShuffleBag()
+            },
 
             // Current difficulty level
             currentDifficulty: 'easy',
@@ -610,7 +654,7 @@ class FastFingers {
             isRunning: false,
             isPaused: false,
             pauseTime: null,
-            timerInterval: null,
+            animationFrameId: null, // Replaces timerInterval
             lastWarnSecond: 5
         };
 
@@ -639,41 +683,46 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     async loadSentences() {
-        // Try to fetch from sentences.json first (production)
+        let pools = {};
+
         try {
             const response = await fetch('sentences.json');
             if (!response.ok) throw new Error('HTTP error');
             const data = await response.json();
-            this.state.sentencePools = {
+            pools = {
                 easy: data.easy || [],
                 medium: data.medium || [],
                 hard: data.hard || [],
                 expert: data.expert || []
             };
             console.log('Sentences loaded from sentences.json');
-            return;
         } catch (error) {
             console.log('fetch failed, trying fallback...');
+            if (typeof SENTENCES_DATA !== 'undefined') {
+                pools = {
+                    easy: SENTENCES_DATA.easy || [],
+                    medium: SENTENCES_DATA.medium || [],
+                    hard: SENTENCES_DATA.hard || [],
+                    expert: SENTENCES_DATA.expert || []
+                };
+                console.log('Sentences loaded from sentences.js (fallback)');
+            } else {
+                console.error('No sentence source available!');
+                pools = {
+                    easy: ["Cümle yüklenemedi - sayfayı yenileyin"],
+                    medium: ["Cümle yüklenemedi - sayfayı yenileyin"],
+                    hard: ["Cümle yüklenemedi - sayfayı yenileyin"],
+                    expert: ["Cümle yüklenemedi - sayfayı yenileyin"]
+                };
+            }
         }
 
-        // Fallback to SENTENCES_DATA from sentences.js (local file:// protocol)
-        if (typeof SENTENCES_DATA !== 'undefined') {
-            this.state.sentencePools = {
-                easy: SENTENCES_DATA.easy || [],
-                medium: SENTENCES_DATA.medium || [],
-                hard: SENTENCES_DATA.hard || [],
-                expert: SENTENCES_DATA.expert || []
-            };
-            console.log('Sentences loaded from sentences.js (fallback)');
-        } else {
-            console.error('No sentence source available!');
-            this.state.sentencePools = {
-                easy: ["Cümle yüklenemedi - sayfayı yenileyin"],
-                medium: ["Cümle yüklenemedi - sayfayı yenileyin"],
-                hard: ["Cümle yüklenemedi - sayfayı yenileyin"],
-                expert: ["Cümle yüklenemedi - sayfayı yenileyin"]
-            };
-        }
+        this.state.sentencePools = pools;
+
+        // Initialize shuffle bags
+        Object.keys(pools).forEach(diff => {
+            this.state.bags[diff].setItems(pools[diff]);
+        });
     }
 
     getDifficultyForWpm(wpm) {
@@ -684,12 +733,11 @@ class FastFingers {
     }
 
     getUnusedSentence(difficulty) {
-        const pool = this.state.sentencePools[difficulty];
-        const available = pool.filter(s => !this.state.usedSentences.has(s));
+        // Use ShuffleBag to get unique sentences without repetition until drained
+        let sentence = this.state.bags[difficulty].next();
 
-        // If all sentences in this difficulty are used, try adjacent difficulty
-        if (available.length === 0) {
-            // Try to get from a nearby difficulty
+        // If somehow failed (empty pool), try adjacent difficulty
+        if (!sentence) {
             const fallbackOrder = {
                 easy: ['medium', 'hard', 'expert'],
                 medium: ['easy', 'hard', 'expert'],
@@ -698,30 +746,20 @@ class FastFingers {
             };
 
             for (const fallback of fallbackOrder[difficulty]) {
-                const fallbackPool = this.state.sentencePools[fallback];
-                const fallbackAvailable = fallbackPool.filter(s => !this.state.usedSentences.has(s));
-                if (fallbackAvailable.length > 0) {
-                    const sentence = fallbackAvailable[Math.floor(Math.random() * fallbackAvailable.length)];
-                    this.state.usedSentences.add(sentence);
-                    return sentence;
-                }
+                sentence = this.state.bags[fallback].next();
+                if (sentence) return sentence;
             }
-
-            // If everything is used, reset and pick random
-            this.state.usedSentences.clear();
-            return pool[Math.floor(Math.random() * pool.length)];
+            // Absolute fallback
+            return "Hata: Cümle bulunamadı.";
         }
 
-        // Pick random from available
-        const sentence = available[Math.floor(Math.random() * available.length)];
-        this.state.usedSentences.add(sentence);
         return sentence;
     }
 
     getAdaptiveSentence() {
         // Calculate current WPM to determine difficulty
         let currentWpm = 0;
-        if (this.state.startTime) {
+        if (this.state.startTime && !this.state.isPaused) {
             const elapsed = (Date.now() - this.state.startTime) / 60000;
             currentWpm = elapsed > 0 ? Math.round((this.state.correctChars / 5) / elapsed) : 0;
         }
@@ -963,6 +1001,16 @@ class FastFingers {
             if (this.state.isRunning && !this.state.isPaused) this.els.typingInput?.focus();
         });
 
+        // Handle visibility change for timer accuracy/pausing
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Auto-pause if user leaves tab
+                if (this.state.isRunning && !this.state.isPaused) {
+                    this.pause();
+                }
+            }
+        });
+
         // Achievement modal
         this.els.achievementBtn?.addEventListener('click', () => this.openAchievementModal());
         this.els.achievementClose?.addEventListener('click', () => this.closeAchievementModal());
@@ -984,14 +1032,14 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     start() {
-        // Clear any existing timer interval first
-        if (this.state.timerInterval) {
-            clearInterval(this.state.timerInterval);
-            this.state.timerInterval = null;
+        // Cancel any existing animation frame
+        if (this.state.animationFrameId) {
+            cancelAnimationFrame(this.state.animationFrameId);
+            this.state.animationFrameId = null;
         }
 
         // Reset all state
-        this.state.usedSentences.clear();
+        // this.state.usedSentences.clear(); // Removed, replaced by shuffle bags
         this.state.currentDifficulty = 'easy'; // Start easy
         this.state.totalWordsTyped = 0;
         this.state.correctWords = 0;
@@ -1054,7 +1102,10 @@ class FastFingers {
     goHome() {
         this.state.isRunning = false;
         this.state.isPaused = false;
-        if (this.state.timerInterval) clearInterval(this.state.timerInterval);
+        if (this.state.animationFrameId) {
+            cancelAnimationFrame(this.state.animationFrameId);
+            this.state.animationFrameId = null;
+        }
 
         // Re-enable input in case it was disabled during pause
         if (this.els.typingInput) {
@@ -1274,7 +1325,10 @@ class FastFingers {
 
     finish() {
         this.state.isRunning = false;
-        if (this.state.timerInterval) clearInterval(this.state.timerInterval);
+        if (this.state.animationFrameId) {
+            cancelAnimationFrame(this.state.animationFrameId);
+            this.state.animationFrameId = null;
+        }
 
         const stats = this.calcFinalStats();
         const isNewRecord = this.savePersonalBest(stats);
@@ -1305,16 +1359,20 @@ class FastFingers {
     }
 
     // ═══════════════════════════════════════════
-    // TIMER
+    // TIMER (Refactored to requestAnimationFrame)
     // ═══════════════════════════════════════════
 
     startTimer() {
         this.state.startTime = Date.now();
+        this.loopTimer();
+    }
 
-        this.state.timerInterval = setInterval(() => {
-            if (!this.state.isRunning || this.state.isPaused) return;
+    loopTimer() {
+        if (!this.state.isRunning) return;
 
-            const elapsed = (Date.now() - this.state.startTime) / 1000;
+        if (!this.state.isPaused) {
+            const now = Date.now();
+            const elapsed = (now - this.state.startTime) / 1000;
             this.state.timeRemaining = Math.max(0, this.state.duration - elapsed);
 
             this.els.countdown.textContent = Math.ceil(this.state.timeRemaining);
@@ -1328,12 +1386,25 @@ class FastFingers {
                 this.els.timer?.classList.add('timer--urgent');
             }
 
+            // Audio warning check
+            if (this.state.timeRemaining <= 5 && this.state.timeRemaining > 0) {
+                const currentSec = Math.ceil(this.state.timeRemaining);
+                if (currentSec <= this.state.lastWarnSecond) {
+                    this.soundManager.playWarning();
+                    this.state.lastWarnSecond = currentSec - 1;
+                }
+            }
+
             if (this.state.timeRemaining <= 0) {
                 this.finish();
+                return; // Stop the loop
             }
 
             this.updateLiveStats();
-        }, 100);
+        }
+
+        // Keep looping
+        this.state.animationFrameId = requestAnimationFrame(() => this.loopTimer());
     }
 
     // ═══════════════════════════════════════════
@@ -1485,15 +1556,6 @@ class FastFingers {
                 charsStat?.classList.add('live-stat--beating');
             } else {
                 charsStat?.classList.remove('live-stat--beating');
-            }
-        }
-
-        // Warning sound check
-        if (this.state.isRunning && !this.state.isPaused && this.state.timeRemaining <= 5 && this.state.timeRemaining > 0) {
-            const currentSec = Math.ceil(this.state.timeRemaining);
-            if (currentSec <= this.state.lastWarnSecond) {
-                this.soundManager.playWarning();
-                this.state.lastWarnSecond = currentSec - 1;
             }
         }
     }

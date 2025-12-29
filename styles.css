@@ -191,18 +191,7 @@ kbd {
     }
 }
 
-@keyframes blink {
-
-    0%,
-    50% {
-        opacity: 1;
-    }
-
-    51%,
-    100% {
-        opacity: 0;
-    }
-}
+/* Removed blinking cursor animation */
 
 .theme-btn {
     width: 40px;
@@ -776,7 +765,7 @@ kbd {
 
 .new-record__stars {
     font-size: 0.75rem;
-    animation: pulse 1s ease-in-out infinite;
+    color: var(--accent);
 }
 
 @keyframes popIn {
