@@ -1478,6 +1478,12 @@ class FastFingers {
             return;
         }
 
+        // Guard: Prevent saving if no characters were typed (empty test)
+        if (this.state.totalCharsTyped === 0) {
+            this.goHome();
+            return;
+        }
+
         // IMPORTANT: Capture end time ONCE at the very start
         // If paused, use pauseTime to avoid counting pause duration
         const capturedEndTime = this.state.isPaused && this.state.pauseTime
