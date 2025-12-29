@@ -1233,7 +1233,7 @@ kbd {
 .btn--share {
     background: var(--bg-elevated);
     border: 1px solid var(--border);
-    color: var(--fg-muted);
+    color: var(--fg);
     font-weight: 600;
     /* Match other buttons */
     transition: all 0.3s ease;
