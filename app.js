@@ -634,7 +634,24 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     async loadSentences() {
-        // Use SENTENCES_DATA from sentences.js (works on file:// protocol)
+        // Try to fetch from sentences.json first (production)
+        try {
+            const response = await fetch('sentences.json');
+            if (!response.ok) throw new Error('HTTP error');
+            const data = await response.json();
+            this.state.sentencePools = {
+                easy: data.easy || [],
+                medium: data.medium || [],
+                hard: data.hard || [],
+                expert: data.expert || []
+            };
+            console.log('Sentences loaded from sentences.json');
+            return;
+        } catch (error) {
+            console.log('fetch failed, trying fallback...');
+        }
+
+        // Fallback to SENTENCES_DATA from sentences.js (local file:// protocol)
         if (typeof SENTENCES_DATA !== 'undefined') {
             this.state.sentencePools = {
                 easy: SENTENCES_DATA.easy || [],
@@ -642,15 +659,14 @@ class FastFingers {
                 hard: SENTENCES_DATA.hard || [],
                 expert: SENTENCES_DATA.expert || []
             };
-            console.log('Sentences loaded from sentences.js');
+            console.log('Sentences loaded from sentences.js (fallback)');
         } else {
-            console.error('SENTENCES_DATA not found! Make sure sentences.js is loaded.');
-            // Minimal fallback
+            console.error('No sentence source available!');
             this.state.sentencePools = {
-                easy: ["Cümle yüklenemedi lütfen sayfayı yenileyin"],
-                medium: ["Cümle yüklenemedi lütfen sayfayı yenileyin"],
-                hard: ["Cümle yüklenemedi lütfen sayfayı yenileyin"],
-                expert: ["Cümle yüklenemedi lütfen sayfayı yenileyin"]
+                easy: ["Cümle yüklenemedi - sayfayı yenileyin"],
+                medium: ["Cümle yüklenemedi - sayfayı yenileyin"],
+                hard: ["Cümle yüklenemedi - sayfayı yenileyin"],
+                expert: ["Cümle yüklenemedi - sayfayı yenileyin"]
             };
         }
     }
