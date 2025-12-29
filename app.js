@@ -190,7 +190,7 @@ class SoundManager {
     }
 
     playKeyclick() {
-        if (!this.enabled || !this.keyclickEnabled) return;
+        if (!this.keyclickEnabled) return;
         this.init();
 
         if (!this.ctx) return;
@@ -793,6 +793,9 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     getStorageKey() {
+        if (this.state.duration === -1) {
+            return 'ff-last-infinite';
+        }
         return `ff-pb-${this.state.duration}`;
     }
 
@@ -800,20 +803,70 @@ class FastFingers {
         const key = this.getStorageKey();
         const saved = localStorage.getItem(key);
 
+        // Update Label
+        const titleEl = document.getElementById('pbTitle');
+        const timeItem = document.getElementById('pbTimeItem');
+        const pbTimeEl = document.getElementById('pbTime');
+
+        if (this.state.duration === -1) {
+            if (titleEl) titleEl.textContent = "SON DENEME";
+            if (timeItem) timeItem.classList.remove('hidden');
+        } else {
+            if (titleEl) titleEl.textContent = "EN İYİ SKOR";
+            if (timeItem) timeItem.classList.add('hidden');
+        }
+
         if (saved) {
             const pb = JSON.parse(saved);
             this.els.pbWpm.textContent = pb.wpm;
             this.els.pbAccuracy.textContent = pb.accuracy + '%';
             this.els.pbChars.textContent = pb.chars;
+
+            // Display time for infinite mode
+            if (this.state.duration === -1 && pb.timeFormatted && pbTimeEl) {
+                pbTimeEl.textContent = pb.timeFormatted;
+            }
         } else {
             this.els.pbWpm.textContent = '—';
             this.els.pbAccuracy.textContent = '—';
             this.els.pbChars.textContent = '—';
+            if (pbTimeEl) pbTimeEl.textContent = '—';
         }
     }
 
     savePersonalBest(stats) {
         const key = this.getStorageKey();
+
+        // specific logic for infinite mode
+        if (this.state.duration === -1) {
+            // Guard: Don't save if test never started
+            if (!this.state.startTime) {
+                return false;
+            }
+
+            // Calculate formatted time
+            const endTime = this.state.pauseTime || Date.now();
+            const elapsedMs = endTime - this.state.startTime;
+
+            // Guard: Don't save if elapsed time is invalid
+            if (elapsedMs < 0 || elapsedMs > 86400000) { // Max 24 hours
+                return false;
+            }
+
+            const elapsedSeconds = Math.floor(elapsedMs / 1000);
+            const mins = Math.floor(elapsedSeconds / 60);
+            const secs = elapsedSeconds % 60;
+            const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            localStorage.setItem(key, JSON.stringify({
+                wpm: Math.max(0, stats.wpm), // Ensure non-negative
+                accuracy: stats.accuracy,
+                chars: stats.correctChars,
+                timeFormatted: formattedTime
+            }));
+            return false; // Infinite mode never triggers "New Record" celebration
+        }
+
         const saved = localStorage.getItem(key);
         const current = saved ? JSON.parse(saved) : null;
 
@@ -911,6 +964,9 @@ class FastFingers {
         // Share and pause buttons
         this.els.shareBtn?.addEventListener('click', () => this.shareResult());
         this.els.resumeBtn?.addEventListener('click', () => this.resume());
+        const finishBtn = document.getElementById('finishRunBtn');
+        finishBtn?.addEventListener('click', () => this.finish());
+
         this.els.quitBtn?.addEventListener('click', () => this.goHome());
         this.els.restartBtn?.addEventListener('click', () => this.start());
 
@@ -1051,7 +1107,15 @@ class FastFingers {
         this.state.correctChars = 0;
         this.state.currentWordIndex = 0;
 
-        this.state.timeRemaining = this.state.duration;
+        if (this.state.duration === -1) {
+            this.state.timeRemaining = 0; // Starts at 0 for infinite
+            // UI setup for infinite
+            this.els.countdown.textContent = "00:00";
+        } else {
+            this.state.timeRemaining = this.state.duration;
+            this.els.countdown.textContent = this.state.duration;
+        }
+
         this.state.startTime = null;
         this.state.isRunning = true;
         this.state.isPaused = false;
@@ -1071,11 +1135,10 @@ class FastFingers {
         if (this.els.countdownProgress) {
             this.els.countdownProgress.style.transform = 'scaleX(1)';
         }
-        this.els.countdown.textContent = this.state.duration;
         this.els.timer?.classList.remove('timer--urgent');
 
         const pb = this.getPersonalBest();
-        if (pb) {
+        if (this.state.duration !== -1 && pb) {
             this.els.targetWpm.textContent = pb.wpm;
             this.els.targetChars.textContent = pb.chars;
         } else {
@@ -1088,6 +1151,20 @@ class FastFingers {
 
         this.els.typingInput.value = '';
         this.els.typingInput.focus();
+
+        // Show/hide Finish button (only for infinite mode)
+        const finishBtn = document.getElementById('finishRunBtn');
+        if (finishBtn) {
+            if (this.state.duration === -1) {
+                finishBtn.classList.remove('hidden');
+                finishBtn.style.opacity = '1';
+                finishBtn.style.pointerEvents = 'auto';
+            } else {
+                finishBtn.classList.add('hidden');
+                finishBtn.style.opacity = '0';
+                finishBtn.style.pointerEvents = 'none';
+            }
+        }
 
         // Update footer hints
         if (this.els.escHint) this.els.escHint.textContent = 'Duraklat';
@@ -1104,6 +1181,12 @@ class FastFingers {
     }
 
     goHome() {
+        // ULTRATHINK: Save stats for infinite mode if user quits manually
+        if (this.state.duration === -1 && this.state.startTime) {
+            const stats = this.calcFinalStats();
+            this.savePersonalBest(stats);
+        }
+
         this.state.isRunning = false;
         this.state.isPaused = false;
         if (this.state.animationFrameId) {
@@ -1117,10 +1200,20 @@ class FastFingers {
             this.els.typingInput.value = '';
         }
 
+        // Hide finish button when going home
+        const finishBtn = document.getElementById('finishRunBtn');
+        if (finishBtn) {
+            finishBtn.style.opacity = '0';
+            finishBtn.style.pointerEvents = 'none';
+        }
+
         this.els.pauseOverlay?.classList.add('hidden');
         this.els.typingArea.classList.add('hidden');
         this.els.resultsScreen.classList.add('hidden');
         this.els.startScreen.classList.remove('hidden');
+
+        // Refresh stats UI to show the just-saved run
+        this.loadPersonalBest();
     }
 
     // ═══════════════════════════════════════════
@@ -1193,6 +1286,20 @@ class FastFingers {
         this.state.pauseTime = Date.now();
         this.els.pauseOverlay?.classList.remove('hidden');
 
+        // Keep "Finish" button visible in infinite mode during pause
+        const finishBtn = document.getElementById('finishRunBtn');
+        if (finishBtn) {
+            if (this.state.duration === -1) {
+                finishBtn.classList.remove('hidden');
+                finishBtn.style.opacity = '1';
+                finishBtn.style.pointerEvents = 'auto';
+            } else {
+                finishBtn.classList.add('hidden');
+                finishBtn.style.opacity = '0';
+                finishBtn.style.pointerEvents = 'none';
+            }
+        }
+
         // Prevent input while paused
         this.els.typingInput?.blur();
         if (this.els.typingInput) {
@@ -1210,6 +1317,20 @@ class FastFingers {
         this.state.isPaused = false;
         this.state.pauseTime = null;
         this.els.pauseOverlay?.classList.add('hidden');
+
+        // Keep "Finish" button visible in infinite mode when resuming
+        const finishBtn = document.getElementById('finishRunBtn');
+        if (finishBtn) {
+            if (this.state.duration === -1) {
+                finishBtn.classList.remove('hidden');
+                finishBtn.style.opacity = '1';
+                finishBtn.style.pointerEvents = 'auto';
+            } else {
+                finishBtn.classList.add('hidden');
+                finishBtn.style.opacity = '0';
+                finishBtn.style.pointerEvents = 'none';
+            }
+        }
 
         // Re-enable and focus input
         if (this.els.typingInput) {
@@ -1277,7 +1398,7 @@ class FastFingers {
         // Footer
         ctx.fillStyle = '#7A7A6C';
         ctx.font = '14px monospace';
-        ctx.fillText(`${this.state.duration}s mod`, canvas.width / 2, 390);
+        ctx.fillText(`${this.state.duration === -1 ? 'Sonsuz' : this.state.duration + 's'} mod`, canvas.width / 2, 390);
 
         // Create blob and copy/download
         canvas.toBlob(async (blob) => {
@@ -1328,26 +1449,78 @@ class FastFingers {
     }
 
     finish() {
+        // Guard: Prevent double-finish or finishing when not running
+        if (!this.state.isRunning) return;
+
+        // Guard: Prevent finishing if test never started (no typing happened)
+        if (!this.state.startTime) {
+            // Just go home silently
+            this.goHome();
+            return;
+        }
+
+        // IMPORTANT: Capture end time ONCE at the very start
+        // If paused, use pauseTime to avoid counting pause duration
+        const capturedEndTime = this.state.isPaused && this.state.pauseTime
+            ? this.state.pauseTime
+            : Date.now();
+
         this.state.isRunning = false;
         if (this.state.animationFrameId) {
             cancelAnimationFrame(this.state.animationFrameId);
             this.state.animationFrameId = null;
         }
 
-        const stats = this.calcFinalStats();
-        const isNewRecord = this.savePersonalBest(stats);
-        this.loadPersonalBest();
+        // Hide pause overlay if visible
+        this.els.pauseOverlay?.classList.add('hidden');
 
-        if (isNewRecord) {
-            this.els.newRecord.classList.remove('hidden');
-        } else {
+        // Hide finish button
+        const finishBtn = document.getElementById('finishRunBtn');
+        if (finishBtn) {
+            finishBtn.style.opacity = '0';
+            finishBtn.style.pointerEvents = 'none';
+        }
+
+        // Calculate stats using the captured end time
+        const stats = this.calcFinalStats(capturedEndTime);
+
+        if (this.state.duration === -1) {
+            // INFINITE MODE
+            // Save to "Last Attempt" using savePersonalBest which handles infinite mode
+            this.savePersonalBest(stats);
+            this.loadPersonalBest();
+
+            // No "New Record" for infinite
             this.els.newRecord.classList.add('hidden');
+
+            // Show elapsed time in the "Words" slot
+            const wordsLabel = this.els.finalWords.closest('.result-detail')?.querySelector('.result-detail__label');
+            if (wordsLabel) wordsLabel.textContent = "SÜRE";
+
+            const elapsedSeconds = Math.floor((capturedEndTime - this.state.startTime) / 1000);
+            const mins = Math.floor(elapsedSeconds / 60);
+            const secs = elapsedSeconds % 60;
+            this.els.finalWords.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            // NORMAL MODE
+            const isNewRecord = this.savePersonalBest(stats);
+            this.loadPersonalBest();
+
+            if (isNewRecord) {
+                this.els.newRecord.classList.remove('hidden');
+            } else {
+                this.els.newRecord.classList.add('hidden');
+            }
+
+            // Restore "KELİME" label in case it was changed
+            const wordsLabel = this.els.finalWords.closest('.result-detail')?.querySelector('.result-detail__label');
+            if (wordsLabel) wordsLabel.textContent = "KELİME";
+            this.els.finalWords.textContent = stats.correctWords;
         }
 
         this.els.finalWpm.textContent = stats.wpm;
         this.els.finalAccuracy.textContent = `${stats.accuracy}%`;
         this.els.finalChars.textContent = stats.correctChars;
-        this.els.finalWords.textContent = stats.correctWords;
 
         this.els.typingArea.classList.add('hidden');
         this.els.resultsScreen.classList.remove('hidden');
@@ -1377,31 +1550,45 @@ class FastFingers {
         if (!this.state.isPaused) {
             const now = Date.now();
             const elapsed = (now - this.state.startTime) / 1000;
-            this.state.timeRemaining = Math.max(0, this.state.duration - elapsed);
 
-            this.els.countdown.textContent = Math.ceil(this.state.timeRemaining);
+            if (this.state.duration === -1) {
+                // Infinite Mode: Count UP
+                const seconds = Math.floor(elapsed);
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                this.els.countdown.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-            const progress = 1 - (elapsed / this.state.duration);
-            if (this.els.countdownProgress) {
-                this.els.countdownProgress.style.transform = `scaleX(${Math.max(0, progress)})`;
-            }
-
-            if (this.state.timeRemaining <= 5) {
-                this.els.timer?.classList.add('timer--urgent');
-            }
-
-            // Audio warning check
-            if (this.state.timeRemaining <= 5 && this.state.timeRemaining > 0) {
-                const currentSec = Math.ceil(this.state.timeRemaining);
-                if (currentSec <= this.state.lastWarnSecond) {
-                    this.soundManager.playWarning();
-                    this.state.lastWarnSecond = currentSec - 1;
+                // Keep progress full
+                if (this.els.countdownProgress) {
+                    this.els.countdownProgress.style.transform = 'scaleX(1)';
                 }
-            }
+            } else {
+                // Normal Mode: Count DOWN
+                this.state.timeRemaining = Math.max(0, this.state.duration - elapsed);
+                this.els.countdown.textContent = Math.ceil(this.state.timeRemaining);
 
-            if (this.state.timeRemaining <= 0) {
-                this.finish();
-                return; // Stop the loop
+                const progress = 1 - (elapsed / this.state.duration);
+                if (this.els.countdownProgress) {
+                    this.els.countdownProgress.style.transform = `scaleX(${Math.max(0, progress)})`;
+                }
+
+                if (this.state.timeRemaining <= 5) {
+                    this.els.timer?.classList.add('timer--urgent');
+                }
+
+                // Audio warning check
+                if (this.state.timeRemaining <= 5 && this.state.timeRemaining > 0) {
+                    const currentSec = Math.ceil(this.state.timeRemaining);
+                    if (currentSec <= this.state.lastWarnSecond) {
+                        this.soundManager.playWarning();
+                        this.state.lastWarnSecond = currentSec - 1;
+                    }
+                }
+
+                if (this.state.timeRemaining <= 0) {
+                    this.finish();
+                    return; // Stop the loop
+                }
             }
 
             this.updateLiveStats();
@@ -1578,9 +1765,23 @@ class FastFingers {
         return { wpm, accuracy: acc, correctChars: this.state.correctChars };
     }
 
-    calcFinalStats() {
-        const mins = this.state.duration / 60;
-        const wpm = Math.round((this.state.correctChars / 5) / mins);
+    calcFinalStats(endTime = null) {
+        let mins;
+
+        if (this.state.duration === -1) {
+            // Infinite mode: use actual elapsed time
+            if (!this.state.startTime) {
+                return { wpm: 0, accuracy: 100, correctChars: 0, correctWords: 0 };
+            }
+            const finalEndTime = endTime || this.state.pauseTime || Date.now();
+            const elapsedMs = finalEndTime - this.state.startTime;
+            mins = elapsedMs / 60000;
+            if (mins <= 0) mins = 0.01; // Prevent divide by zero
+        } else {
+            mins = this.state.duration / 60;
+        }
+
+        const wpm = Math.max(0, Math.round((this.state.correctChars / 5) / mins));
         const acc = this.state.totalCharsTyped > 0
             ? Math.round((this.state.correctChars / this.state.totalCharsTyped) * 100)
             : 100;
@@ -1591,6 +1792,28 @@ class FastFingers {
             correctChars: this.state.correctChars,
             correctWords: this.state.correctWords
         };
+    }
+
+    // Helper for infinite mode to save stats with consistent timing
+    saveInfiniteStats(stats, endTime) {
+        const key = 'ff-last-infinite';
+
+        if (!this.state.startTime) return;
+
+        const elapsedMs = endTime - this.state.startTime;
+        if (elapsedMs < 0 || elapsedMs > 86400000) return;
+
+        const elapsedSeconds = Math.floor(elapsedMs / 1000);
+        const mins = Math.floor(elapsedSeconds / 60);
+        const secs = elapsedSeconds % 60;
+        const formattedTime = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        localStorage.setItem(key, JSON.stringify({
+            wpm: stats.wpm,  // Use the EXACT same WPM from calcFinalStats
+            accuracy: stats.accuracy,
+            chars: stats.correctChars,
+            timeFormatted: formattedTime
+        }));
     }
 }
 

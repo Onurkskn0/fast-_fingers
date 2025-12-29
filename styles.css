@@ -48,6 +48,11 @@
     --duration-slow: 500ms;
 }
 
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
 [data-theme="light"] {
     --bg: #FAF9F6;
     --bg-elevated: #FFFFFF;
@@ -428,6 +433,11 @@ kbd {
     gap: var(--space-md);
 }
 
+/* When time item is visible (infinite mode) */
+.stats-card__grid:has(.stat-item:not(.hidden):nth-child(4)) {
+    grid-template-columns: repeat(4, 1fr);
+}
+
 .stat-item {
     display: flex;
     flex-direction: column;
@@ -484,6 +494,36 @@ kbd {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--bg);
+}
+
+/* Finish Button (Infinite Mode) */
+.btn--finish {
+    position: fixed;
+    bottom: var(--space-2xl);
+    right: var(--space-2xl);
+    padding: var(--space-sm) var(--space-lg);
+    background: transparent;
+    color: var(--fg-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    opacity: 1;
+    transition: color var(--duration-fast), border-color var(--duration-fast), background var(--duration-fast), opacity var(--duration-base);
+    z-index: 1000;
+    /* Above pause overlay (z-index: 100) */
+}
+
+.btn--finish.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.btn--finish:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-elevated);
 }
 
 /* Start Button */

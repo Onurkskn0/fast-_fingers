@@ -100,7 +100,7 @@
             <div class="stats-card" id="personalBest">
                 <div class="stats-card__header">
                     <span class="stats-card__icon">★</span>
-                    <span class="stats-card__title">EN İYİ SKOR</span>
+                    <span class="stats-card__title" id="pbTitle">EN İYİ SKOR</span>
                 </div>
                 <div class="stats-card__grid">
                     <div class="stat-item">
@@ -115,6 +115,10 @@
                         <span class="stat-item__value" id="pbChars">—</span>
                         <span class="stat-item__label">HARF</span>
                     </div>
+                    <div class="stat-item hidden" id="pbTimeItem">
+                        <span class="stat-item__value" id="pbTime">—</span>
+                        <span class="stat-item__label">SÜRE</span>
+                    </div>
                 </div>
             </div>
 
@@ -125,6 +129,7 @@
                     <button class="duration-btn" data-duration="15">15s</button>
                     <button class="duration-btn" data-duration="30">30s</button>
                     <button class="duration-btn" data-duration="60">60s</button>
+                    <button class="duration-btn" data-duration="-1" style="font-size: 1.2em;">∞</button>
                 </div>
                 <script>
                     // Apply saved duration immediately to prevent UI flash
@@ -140,7 +145,7 @@
 
             <button class="start-btn" id="startBtn">
                 <span class="start-btn__icon">▶</span>
-                <span class="start-btn__text">BAŞLAT</span>
+                <span class="start-btn__text">BAŞLA</span>
             </button>
 
             <p class="hint">ENTER veya SPACE ile başla</p>
@@ -241,6 +246,12 @@
                 </button>
             </div>
         </section>
+
+        <!-- Finish Button for Infinite Mode - OUTSIDE hidden sections to prevent teleportation -->
+        <button class="btn btn--finish" id="finishRunBtn"
+            style="position: fixed; bottom: 3rem; right: 3rem; opacity: 0; pointer-events: none;">
+            ✓ BİTİR
+        </button>
 
         <!-- Pause Overlay -->
         <div class="pause-overlay hidden" id="pauseOverlay">
