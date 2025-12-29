@@ -1512,14 +1512,18 @@ class FastFingers {
             // No "New Record" for infinite
             this.els.newRecord.classList.add('hidden');
 
-            // Show elapsed time in the "Words" slot
-            const wordsLabel = this.els.finalWords.closest('.result-detail')?.querySelector('.result-detail__label');
-            if (wordsLabel) wordsLabel.textContent = "SÜRE";
+            // Show word count
+            this.els.finalWords.textContent = stats.correctWords;
+
+            // Show elapsed time in dedicated SÜRE field
+            const finalTimeItem = document.getElementById('finalTimeItem');
+            const finalTime = document.getElementById('finalTime');
+            if (finalTimeItem) finalTimeItem.classList.remove('hidden');
 
             const elapsedSeconds = Math.floor((capturedEndTime - this.state.startTime) / 1000);
             const mins = Math.floor(elapsedSeconds / 60);
             const secs = elapsedSeconds % 60;
-            this.els.finalWords.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            if (finalTime) finalTime.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         } else {
             // NORMAL MODE
             const isNewRecord = this.savePersonalBest(stats);
@@ -1531,9 +1535,11 @@ class FastFingers {
                 this.els.newRecord.classList.add('hidden');
             }
 
-            // Restore "KELİME" label in case it was changed
-            const wordsLabel = this.els.finalWords.closest('.result-detail')?.querySelector('.result-detail__label');
-            if (wordsLabel) wordsLabel.textContent = "KELİME";
+            // Hide time field for normal mode
+            const finalTimeItem = document.getElementById('finalTimeItem');
+            if (finalTimeItem) finalTimeItem.classList.add('hidden');
+
+            // Show word count
             this.els.finalWords.textContent = stats.correctWords;
         }
 
