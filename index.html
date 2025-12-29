@@ -18,6 +18,22 @@
 </head>
 
 <body>
+    <script>
+        // Critical: Apply saved preferences immediately to prevent FOUC
+        (function () {
+            try {
+                const isHighContrast = localStorage.getItem('ff_high_contrast') === 'true';
+                const isLargeText = localStorage.getItem('ff_large_text') === 'true';
+                const theme = localStorage.getItem('ff-theme') || 'dark';
+
+                if (isHighContrast) document.documentElement.classList.add('high-contrast');
+                if (isLargeText) document.documentElement.classList.add('large-text');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                console.log('Preferences could not be loaded');
+            }
+        })();
+    </script>
     <div class="scanlines"></div>
     <div class="vignette"></div>
 

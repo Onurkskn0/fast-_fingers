@@ -268,16 +268,62 @@ kbd {
     box-shadow: none !important;
 }
 
+.high-contrast *:focus-visible {
+    outline: 2px solid var(--accent) !important;
+    outline-offset: 2px;
+}
+
 .high-contrast .scanlines,
 .high-contrast .vignette {
     display: none;
 }
 
 /* LARGE TEXT MODE */
+/* LARGE TEXT MODE */
 html.large-text {
-    font-size: 22px;
-    /* ~137.5% scaling for visible impact */
+    font-size: 19px;
+    /* Reduced from 22px for better usability */
 }
+
+.large-text .container {
+    max-width: 800px;
+    /* More width to accommodate larger text */
+    padding: var(--space-md);
+    /* Reduce padding to save screen space */
+}
+
+.large-text .typing-box {
+    padding: var(--space-xl);
+    min-height: auto;
+    /* Remove rigid height */
+}
+
+.large-text .sentence {
+    line-height: 1.6;
+    /* Tighter line height prevents excessive scrolling */
+    font-size: 1.5rem;
+    /* Explicit comfortable reading size */
+}
+
+.large-text .stat-item__value {
+    font-size: 2rem;
+    /* Cap stats size */
+}
+
+.large-text .achievement-modal__grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+}
+
+.large-text .achievement-card {
+    padding: 1rem;
+}
+
+.large-text .a11y-panel {
+    width: auto;
+    min-width: 280px;
+}
+
 
 /* ═══════════════════════════════════════════
    LAYOUT
