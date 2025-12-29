@@ -273,6 +273,20 @@ kbd {
     outline-offset: 2px;
 }
 
+.high-contrast .achievement-btn,
+.high-contrast .achievement-modal__content,
+.high-contrast .achievement-card,
+.high-contrast .duration-btn,
+.high-contrast .btn--finish,
+.high-contrast .btn--share,
+.high-contrast .btn--secondary,
+.high-contrast kbd,
+.high-contrast .terminal,
+.high-contrast .terminal__header,
+.high-contrast .stats-card {
+    border-width: 2px;
+}
+
 .high-contrast .scanlines,
 .high-contrast .vignette {
     display: none;
