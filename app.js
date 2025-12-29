@@ -563,11 +563,16 @@ class FastFingers {
             pauseOverlay: document.getElementById('pauseOverlay'),
             resumeBtn: document.getElementById('resumeBtn'),
             quitBtn: document.getElementById('quitBtn'),
+            restartBtn: document.getElementById('restartBtn'),
             achievementBtn: document.getElementById('achievementBtn'),
             achievementCount: document.getElementById('achievementCount'),
             achievementModal: document.getElementById('achievementModal'),
             achievementGrid: document.getElementById('achievementGrid'),
-            achievementClose: document.getElementById('achievementClose')
+            achievementClose: document.getElementById('achievementClose'),
+            escHint: document.getElementById('escHint'),
+            escHint: document.getElementById('escHint'),
+            enterHintItem: document.getElementById('enterHintItem'),
+            spaceHintItem: document.getElementById('spaceHintItem')
         };
 
         this.state = {
@@ -866,6 +871,7 @@ class FastFingers {
         this.els.shareBtn?.addEventListener('click', () => this.shareResult());
         this.els.resumeBtn?.addEventListener('click', () => this.resume());
         this.els.quitBtn?.addEventListener('click', () => this.goHome());
+        this.els.restartBtn?.addEventListener('click', () => this.start());
 
         this.els.modeBtns.forEach(btn => {
             btn.addEventListener('click', () => this.selectMode(btn));
@@ -873,9 +879,9 @@ class FastFingers {
 
         this.els.typingInput?.addEventListener('input', (e) => this.handleInput(e));
 
-        // Word submission (Space/Enter)
+        // Word submission (Space only)
         this.els.typingInput?.addEventListener('keydown', (e) => {
-            if ((e.key === ' ' || e.key === 'Enter') && this.state.isRunning && !this.state.isPaused) {
+            if (e.key === ' ' && this.state.isRunning && !this.state.isPaused) {
                 e.preventDefault();
                 this.submitWord();
             }
@@ -897,11 +903,13 @@ class FastFingers {
                 e.preventDefault();
                 e.stopPropagation();
 
-                // Typing screen - toggle pause
+                // Typing screen - pause or resume
                 if (this.state.isRunning) {
                     if (this.state.isPaused) {
+                        // ESC on pause screen = resume
                         this.resume();
                     } else {
+                        // ESC while typing = pause
                         this.pause();
                     }
                     return;
@@ -920,10 +928,17 @@ class FastFingers {
                 }
             }
 
-            // Space key to resume from pause
-            if (e.key === ' ' && this.state.isRunning && this.state.isPaused) {
+            // Backspace key to go home from pause screen
+            if (e.key === 'Backspace' && this.state.isRunning && this.state.isPaused) {
                 e.preventDefault();
-                this.resume();
+                this.goHome();
+                return;
+            }
+
+            // Enter key to restart test from pause screen
+            if (e.key === 'Enter' && this.state.isRunning && this.state.isPaused) {
+                e.preventDefault();
+                this.start(); // Restart the test
                 return;
             }
 
@@ -935,9 +950,9 @@ class FastFingers {
                 }
             }
 
-            // Results screen shortcuts (Enter/Space for retry)
+            // Results screen shortcuts (Enter for retry)
             if (!this.els.resultsScreen.classList.contains('hidden')) {
-                if (e.key === 'Enter' || e.key === ' ') {
+                if (e.key === 'Enter') {
                     e.preventDefault();
                     this.start();
                 }
@@ -993,7 +1008,13 @@ class FastFingers {
 
         this.els.startScreen.classList.add('hidden');
         this.els.resultsScreen.classList.add('hidden');
+        this.els.pauseOverlay?.classList.add('hidden'); // Close pause overlay
         this.els.typingArea.classList.remove('hidden');
+
+        // Re-enable input if it was disabled during pause
+        if (this.els.typingInput) {
+            this.els.typingInput.disabled = false;
+        }
 
         if (this.els.countdownProgress) {
             this.els.countdownProgress.style.transform = 'scaleX(1)';
@@ -1015,6 +1036,11 @@ class FastFingers {
 
         this.els.typingInput.value = '';
         this.els.typingInput.focus();
+
+        // Update footer hints
+        if (this.els.escHint) this.els.escHint.textContent = 'Duraklat';
+        if (this.els.enterHintItem) this.els.enterHintItem.style.display = 'none';
+        if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = '';
     }
 
     loadNewSentence() {
@@ -1029,6 +1055,12 @@ class FastFingers {
         this.state.isRunning = false;
         this.state.isPaused = false;
         if (this.state.timerInterval) clearInterval(this.state.timerInterval);
+
+        // Re-enable input in case it was disabled during pause
+        if (this.els.typingInput) {
+            this.els.typingInput.disabled = false;
+            this.els.typingInput.value = '';
+        }
 
         this.els.pauseOverlay?.classList.add('hidden');
         this.els.typingArea.classList.add('hidden');
@@ -1105,6 +1137,12 @@ class FastFingers {
         this.state.isPaused = true;
         this.state.pauseTime = Date.now();
         this.els.pauseOverlay?.classList.remove('hidden');
+
+        // Prevent input while paused
+        this.els.typingInput?.blur();
+        if (this.els.typingInput) {
+            this.els.typingInput.disabled = true;
+        }
     }
 
     resume() {
@@ -1117,6 +1155,11 @@ class FastFingers {
         this.state.isPaused = false;
         this.state.pauseTime = null;
         this.els.pauseOverlay?.classList.add('hidden');
+
+        // Re-enable and focus input
+        if (this.els.typingInput) {
+            this.els.typingInput.disabled = false;
+        }
         this.els.typingInput?.focus();
     }
 
@@ -1254,6 +1297,11 @@ class FastFingers {
         // Check achievements
         this.achievementManager.checkAll(stats);
         this.updateAchievementCount();
+
+        // Update footer hints for results screen
+        if (this.els.escHint) this.els.escHint.textContent = 'Menü';
+        if (this.els.enterHintItem) this.els.enterHintItem.style.display = '';
+        if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = 'none';
     }
 
     // ═══════════════════════════════════════════
@@ -1293,7 +1341,7 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     handleInput(e) {
-        if (!this.state.isRunning) return;
+        if (!this.state.isRunning || this.state.isPaused) return;
 
         if (!this.state.startTime) {
             this.soundManager.init(); // Init audio context on first interaction

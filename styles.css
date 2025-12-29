@@ -1071,6 +1071,7 @@ kbd {
     font-size: 1.5rem;
     font-weight: 700;
     letter-spacing: 0.1em;
+    letter-spacing: 0.1em;
 }
 
 .pause-hint {
@@ -1080,8 +1081,38 @@ kbd {
 
 .pause-actions {
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: var(--space-md);
     margin-top: var(--space-md);
+    width: 100%;
+}
+
+.pause-actions-row {
+    display: flex;
+    gap: var(--space-md);
+    width: 100%;
+    justify-content: center;
+}
+
+.restart-btn {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.8rem;
+    color: var(--fg-muted);
+    opacity: 0.7;
+    transition: all 0.2s;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+}
+
+.restart-btn:hover {
+    color: var(--accent);
+    opacity: 1;
+    transform: none;
+    box-shadow: none;
 }
 
 .pause-shortcut {
@@ -1192,6 +1223,7 @@ kbd {
     height: 1.2em;
     stroke-width: 2;
 }
+
 /* 
 =============================================
    ACHIEVEMENT SYSTEM
@@ -1266,6 +1298,7 @@ kbd {
         opacity: 0;
         transform: scale(0.95) translateY(20px);
     }
+
     to {
         opacity: 1;
         transform: scale(1) translateY(0);
@@ -1391,13 +1424,23 @@ kbd {
 }
 
 @keyframes unlockFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 @keyframes unlockFadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
 .achievement-unlock__content {
@@ -1410,9 +1453,11 @@ kbd {
         opacity: 0;
         transform: scale(0.5);
     }
+
     50% {
         transform: scale(1.1);
     }
+
     100% {
         opacity: 1;
         transform: scale(1);
@@ -1426,8 +1471,15 @@ kbd {
 }
 
 @keyframes unlockBounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-20px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-20px);
+    }
 }
 
 .achievement-unlock__label {
@@ -1482,6 +1534,7 @@ kbd {
         opacity: 0;
         transform: translateX(-100%);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
@@ -1518,4 +1571,3 @@ kbd {
     font-weight: 600;
     color: var(--fg);
 }
-

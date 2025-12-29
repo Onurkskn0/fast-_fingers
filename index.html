@@ -240,14 +240,19 @@
                 <h2 class="pause-title">DURAKLADI</h2>
                 <p class="pause-hint">Devam etmek için bir seçenek seç</p>
                 <div class="pause-actions">
-                    <button class="btn btn--primary" id="resumeBtn">
-                        <span>▶</span> DEVAM
-                    </button>
-                    <button class="btn btn--secondary" id="quitBtn">
-                        <span>✕</span> VAZGEÇ
+                    <div class="pause-actions-row">
+                        <button class="btn btn--primary" id="resumeBtn">
+                            <span>▶</span> DEVAM
+                        </button>
+                        <button class="btn btn--secondary" id="quitBtn">
+                            <span>✕</span> VAZGEÇ
+                        </button>
+                    </div>
+                    <button class="btn btn--text restart-btn" id="restartBtn">
+                        <span>↻</span> YENİDEN BAŞLAT
                     </button>
                 </div>
-                <p class="pause-shortcut"><kbd>space</kbd> veya <kbd>ESC</kbd> ile devam</p>
+                <p class="pause-shortcut"><kbd>ESC</kbd> devam · <kbd>enter</kbd> tekrar · <kbd>⌫</kbd> menü</p>
             </div>
         </div>
 
@@ -255,13 +260,13 @@
         <footer class="footer">
             <div class="key-legend">
                 <div class="key-item">
-                    <kbd>ESC</kbd> <span>Duraklat</span>
+                    <kbd>ESC</kbd> <span id="escHint">Duraklat</span>
                 </div>
-                <div class="key-item">
-                    <kbd>enter</kbd> <span>Tekrar</span>
-                </div>
-                <div class="key-item">
+                <div class="key-item" id="spaceHintItem">
                     <kbd>space</kbd> <span>İlerle</span>
+                </div>
+                <div class="key-item" id="enterHintItem">
+                    <kbd>enter</kbd> <span>Tekrar</span>
                 </div>
             </div>
         </footer>
