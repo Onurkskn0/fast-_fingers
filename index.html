@@ -123,9 +123,19 @@
                 <span class="duration-label">SÜRE:</span>
                 <div class="duration-btns">
                     <button class="duration-btn" data-duration="15">15s</button>
-                    <button class="duration-btn active" data-duration="30">30s</button>
+                    <button class="duration-btn" data-duration="30">30s</button>
                     <button class="duration-btn" data-duration="60">60s</button>
                 </div>
+                <script>
+                    // Apply saved duration immediately to prevent UI flash
+                    (function () {
+                        try {
+                            const saved = localStorage.getItem('ff_duration') || '30';
+                            const btn = document.querySelector(`.duration-btn[data-duration="${saved}"]`);
+                            if (btn) btn.classList.add('active');
+                        } catch (e) { }
+                    })();
+                </script>
             </div>
 
             <button class="start-btn" id="startBtn">

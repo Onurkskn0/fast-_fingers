@@ -640,7 +640,7 @@ class FastFingers {
             currentWordIndex: 0,
 
             // Settings
-            duration: 30,
+            duration: parseInt(localStorage.getItem('ff_duration')) || 30,
 
             // Stats
             totalWordsTyped: 0,
@@ -674,6 +674,9 @@ class FastFingers {
         this.loadTheme();
         this.loadPersonalBest();
         this.loadSoundState();
+
+        // precise UI update for duration handled by inline script in index.html to prevent FOUC
+
         this.bindEvents();
         this.els.timer = this.els.countdown?.closest('.timer');
     }
@@ -1024,6 +1027,7 @@ class FastFingers {
         this.els.modeBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this.state.duration = parseInt(btn.dataset.duration);
+        localStorage.setItem('ff_duration', this.state.duration);
         this.loadPersonalBest();
     }
 
