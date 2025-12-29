@@ -1400,8 +1400,17 @@ class FastFingers {
             { label: 'KELİME', value: this.els.finalWords.textContent }
         ];
 
-        const startX = 160;
-        const gap = 240;
+        // Add SÜRE for infinite mode (check if time field is visible)
+        const finalTimeItem = document.getElementById('finalTimeItem');
+        const finalTime = document.getElementById('finalTime');
+        const isInfiniteMode = finalTimeItem && !finalTimeItem.classList.contains('hidden');
+
+        if (isInfiniteMode && finalTime && finalTime.textContent) {
+            stats.push({ label: 'SÜRE', value: finalTime.textContent });
+        }
+
+        const startX = isInfiniteMode ? 100 : 160;
+        const gap = isInfiniteMode ? 175 : 240;
 
         stats.forEach((stat, i) => {
             const x = startX + i * gap;
