@@ -112,6 +112,10 @@
                         <span class="stat-item__label">DOĞRULUK</span>
                     </div>
                     <div class="stat-item">
+                        <span class="stat-item__value" id="pbWords">—</span>
+                        <span class="stat-item__label">KELİME</span>
+                    </div>
+                    <div class="stat-item">
                         <span class="stat-item__value" id="pbChars">—</span>
                         <span class="stat-item__label">HARF</span>
                     </div>
@@ -189,6 +193,10 @@
                 <div class="live-stat">
                     <span class="live-stat__value" id="liveAccuracy">100%</span>
                     <span class="live-stat__label">DOĞRULUK</span>
+                </div>
+                <div class="live-stat">
+                    <span class="live-stat__value" id="liveWords">0</span>
+                    <span class="live-stat__label">KELİME</span>
                 </div>
                 <div class="live-stat">
                     <span class="live-stat__value" id="liveChars">0</span>
@@ -279,14 +287,14 @@
         <!-- Footer -->
         <footer class="footer">
             <div class="key-legend">
-                <div class="key-item">
-                    <kbd>ESC</kbd> <span id="escHint">Duraklat</span>
+                <div class="key-item" id="escHintItem">
+                    <kbd>ESC</kbd> <span id="escHint">Menü</span>
                 </div>
                 <div class="key-item" id="spaceHintItem">
-                    <kbd>space</kbd> <span>İlerle</span>
+                    <kbd>space</kbd> <span id="spaceHint">Başla</span>
                 </div>
                 <div class="key-item" id="enterHintItem">
-                    <kbd>enter</kbd> <span>Tekrar</span>
+                    <kbd>enter</kbd> <span id="enterHint">Başla</span>
                 </div>
             </div>
         </footer>

@@ -585,6 +585,7 @@ class FastFingers {
             modeBtns: document.querySelectorAll('.duration-btn'),
             liveWpm: document.getElementById('liveWpm'),
             liveAccuracy: document.getElementById('liveAccuracy'),
+            liveWords: document.getElementById('liveWords'),
             liveChars: document.getElementById('liveChars'),
             targetWpm: document.getElementById('targetWpm'),
             targetChars: document.getElementById('targetChars'),
@@ -595,6 +596,7 @@ class FastFingers {
             newRecord: document.getElementById('newRecord'),
             pbWpm: document.getElementById('pbWpm'),
             pbAccuracy: document.getElementById('pbAccuracy'),
+            pbWords: document.getElementById('pbWords'),
             pbChars: document.getElementById('pbChars'),
             submitBtn: document.getElementById('submitBtn'),
             soundToggle: document.getElementById('soundToggle'),
@@ -610,7 +612,10 @@ class FastFingers {
             achievementGrid: document.getElementById('achievementGrid'),
             achievementClose: document.getElementById('achievementClose'),
             escHint: document.getElementById('escHint'),
+            escHintItem: document.getElementById('escHintItem'),
+            enterHint: document.getElementById('enterHint'),
             enterHintItem: document.getElementById('enterHintItem'),
+            spaceHint: document.getElementById('spaceHint'),
             spaceHintItem: document.getElementById('spaceHintItem')
         };
 
@@ -820,6 +825,7 @@ class FastFingers {
             const pb = JSON.parse(saved);
             this.els.pbWpm.textContent = pb.wpm;
             this.els.pbAccuracy.textContent = pb.accuracy + '%';
+            if (this.els.pbWords) this.els.pbWords.textContent = pb.words || '—';
             this.els.pbChars.textContent = pb.chars;
 
             // Display time for infinite mode
@@ -829,6 +835,7 @@ class FastFingers {
         } else {
             this.els.pbWpm.textContent = '—';
             this.els.pbAccuracy.textContent = '—';
+            if (this.els.pbWords) this.els.pbWords.textContent = '—';
             this.els.pbChars.textContent = '—';
             if (pbTimeEl) pbTimeEl.textContent = '—';
         }
@@ -861,6 +868,7 @@ class FastFingers {
             localStorage.setItem(key, JSON.stringify({
                 wpm: Math.max(0, stats.wpm), // Ensure non-negative
                 accuracy: stats.accuracy,
+                words: stats.correctWords,
                 chars: stats.correctChars,
                 timeFormatted: formattedTime
             }));
@@ -878,6 +886,7 @@ class FastFingers {
             localStorage.setItem(key, JSON.stringify({
                 wpm: stats.wpm,
                 accuracy: stats.accuracy,
+                words: stats.correctWords,
                 chars: stats.correctChars
             }));
         }
@@ -1166,10 +1175,12 @@ class FastFingers {
             }
         }
 
-        // Update footer hints
+        // Update footer hints for typing mode
+        if (this.els.escHintItem) this.els.escHintItem.style.display = '';
         if (this.els.escHint) this.els.escHint.textContent = 'Duraklat';
-        if (this.els.enterHintItem) this.els.enterHintItem.style.display = 'none';
+        if (this.els.spaceHint) this.els.spaceHint.textContent = 'İlerle';
         if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = '';
+        if (this.els.enterHintItem) this.els.enterHintItem.style.display = 'none';
     }
 
     loadNewSentence() {
@@ -1214,6 +1225,14 @@ class FastFingers {
 
         // Refresh stats UI to show the just-saved run
         this.loadPersonalBest();
+
+        // Update footer hints for home screen - show ALL shortcuts
+        if (this.els.escHintItem) this.els.escHintItem.style.display = '';
+        if (this.els.escHint) this.els.escHint.textContent = 'Menü';
+        if (this.els.spaceHint) this.els.spaceHint.textContent = 'Başla';
+        if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = '';
+        if (this.els.enterHint) this.els.enterHint.textContent = 'Başla';
+        if (this.els.enterHintItem) this.els.enterHintItem.style.display = '';
     }
 
     // ═══════════════════════════════════════════
@@ -1730,6 +1749,7 @@ class FastFingers {
         const stats = this.calcLiveStats();
         this.els.liveWpm.textContent = stats.wpm;
         this.els.liveAccuracy.textContent = `${stats.accuracy}%`;
+        if (this.els.liveWords) this.els.liveWords.textContent = stats.correctWords;
         this.els.liveChars.textContent = stats.correctChars;
 
         const pb = this.getPersonalBest();
@@ -1753,7 +1773,7 @@ class FastFingers {
 
     calcLiveStats() {
         if (!this.state.startTime) {
-            return { wpm: 0, accuracy: 100, correctChars: 0 };
+            return { wpm: 0, accuracy: 100, correctChars: 0, correctWords: 0 };
         }
 
         const elapsed = (Date.now() - this.state.startTime) / 60000;
@@ -1762,7 +1782,7 @@ class FastFingers {
             ? Math.round((this.state.correctChars / this.state.totalCharsTyped) * 100)
             : 100;
 
-        return { wpm, accuracy: acc, correctChars: this.state.correctChars };
+        return { wpm, accuracy: acc, correctChars: this.state.correctChars, correctWords: this.state.correctWords };
     }
 
     calcFinalStats(endTime = null) {
