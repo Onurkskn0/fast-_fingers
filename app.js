@@ -191,12 +191,343 @@ class SoundManager {
 }
 
 // ═══════════════════════════════════════════
+// ACHIEVEMENT SYSTEM
+// ═══════════════════════════════════════════
+
+class AchievementManager {
+    constructor(app) {
+        this.app = app;
+
+        // Achievement definitions
+        this.achievements = {
+            // Tier 1 - Hoşgeldin
+            first_step: {
+                id: 'first_step',
+                icon: '🚀',
+                name: 'İlk Adım',
+                description: 'İlk testini tamamla',
+                tier: 1,
+                hidden: false
+            },
+            fast_start: {
+                id: 'fast_start',
+                icon: '⚡',
+                name: 'Hızlı Başlangıç',
+                description: 'İlk 5 saniyede 5+ kelime yaz',
+                tier: 1,
+                hidden: false
+            },
+            // Tier 2 - Gelişim
+            sharpshooter: {
+                id: 'sharpshooter',
+                icon: '🎯',
+                name: 'Keskin Nişancı',
+                description: '%100 doğrulukla bitir',
+                tier: 2,
+                hidden: false
+            },
+            hot_hands: {
+                id: 'hot_hands',
+                icon: '🔥',
+                name: 'Ateşli Eller',
+                description: '80+ WPM ulaş',
+                tier: 2,
+                hidden: false
+            },
+            rising: {
+                id: 'rising',
+                icon: '📈',
+                name: 'Yükseliş',
+                description: 'Kişisel rekoru 5 kez geç',
+                tier: 2,
+                hidden: false,
+                maxProgress: 5
+            },
+            persistent: {
+                id: 'persistent',
+                icon: '🔁',
+                name: 'Azimli',
+                description: 'Tek oturumda 10 test tamamla',
+                tier: 2,
+                hidden: false,
+                maxProgress: 10
+            },
+            // Tier 3 - Ustalık
+            like_wind: {
+                id: 'like_wind',
+                icon: '💨',
+                name: 'Rüzgar Gibi',
+                description: '100+ WPM ulaş',
+                tier: 3,
+                hidden: false
+            },
+            perfectionist: {
+                id: 'perfectionist',
+                icon: '💯',
+                name: 'Mükemmeliyetçi',
+                description: 'Üst üste 3 test %95+ doğruluk',
+                tier: 3,
+                hidden: false,
+                maxProgress: 3
+            },
+            champion: {
+                id: 'champion',
+                icon: '🏆',
+                name: 'Şampiyon',
+                description: '3 sürede de kişisel rekor kır',
+                tier: 3,
+                hidden: false,
+                maxProgress: 3
+            },
+            marathon: {
+                id: 'marathon',
+                icon: '🏃',
+                name: 'Maratoncu',
+                description: '60s modda 150+ kelime yaz',
+                tier: 3,
+                hidden: false
+            },
+            // Tier 4 - Efsane (Gizli)
+            diamond: {
+                id: 'diamond',
+                icon: '💎',
+                name: 'Elmas Eller',
+                description: '%100 doğruluk + 100 WPM aynı anda',
+                tier: 4,
+                hidden: false
+            },
+            night_owl: {
+                id: 'night_owl',
+                icon: '🌙',
+                name: 'Gece Kuşu',
+                description: '???',
+                hint: 'Gecenin sessizliğinde...',
+                tier: 4,
+                hidden: true
+            }
+        };
+
+        this.load();
+        this.sessionTests = 0;
+        this.notificationQueue = [];
+        this.isShowingNotification = false;
+    }
+
+    load() {
+        const saved = localStorage.getItem('ff_achievements');
+        if (saved) {
+            const data = JSON.parse(saved);
+            this.unlocked = new Set(data.unlocked || []);
+            this.progress = data.progress || {};
+            this.stats = data.stats || { totalTests: 0, pbBeaten: 0 };
+            this.streaks = data.streaks || { accuracy95: 0 };
+            this.championModes = new Set(data.championModes || []);
+        } else {
+            this.unlocked = new Set();
+            this.progress = {};
+            this.stats = { totalTests: 0, pbBeaten: 0 };
+            this.streaks = { accuracy95: 0 };
+            this.championModes = new Set();
+        }
+    }
+
+    save() {
+        localStorage.setItem('ff_achievements', JSON.stringify({
+            unlocked: [...this.unlocked],
+            progress: this.progress,
+            stats: this.stats,
+            streaks: this.streaks,
+            championModes: [...this.championModes]
+        }));
+    }
+
+    unlock(id) {
+        if (this.unlocked.has(id)) return false;
+
+        this.unlocked.add(id);
+        this.save();
+
+        const achievement = this.achievements[id];
+        if (achievement) {
+            this.queueNotification(achievement);
+        }
+
+        return true;
+    }
+
+    queueNotification(achievement) {
+        this.notificationQueue.push(achievement);
+        if (!this.isShowingNotification) {
+            this.showNextNotification();
+        }
+    }
+
+    showNextNotification() {
+        if (this.notificationQueue.length === 0) {
+            this.isShowingNotification = false;
+            return;
+        }
+
+        this.isShowingNotification = true;
+        const achievement = this.notificationQueue.shift();
+        this.showUnlockOverlay(achievement);
+    }
+
+    showUnlockOverlay(achievement) {
+        // Play achievement sound
+        this.app.soundManager.playAchievement();
+
+        // Create corner toast (non-intrusive)
+        const toast = document.createElement('div');
+        toast.className = 'achievement-toast';
+        toast.innerHTML = `
+            <div class="achievement-toast__icon">${achievement.icon}</div>
+            <div class="achievement-toast__text">
+                <div class="achievement-toast__label">BAŞARIM</div>
+                <div class="achievement-toast__name">${achievement.name}</div>
+            </div>
+        `;
+
+        document.body.appendChild(toast);
+
+        // Auto close after 4 seconds
+        setTimeout(() => {
+            toast.classList.add('hiding');
+            toast.addEventListener('animationend', () => {
+                toast.remove();
+                this.showNextNotification();
+            });
+        }, 4000);
+
+        // Click to close
+        toast.addEventListener('click', () => {
+            toast.classList.add('hiding');
+        });
+    }
+
+    // Called at end of each test
+    checkAll(stats) {
+        this.stats.totalTests++;
+        this.sessionTests++;
+
+        // first_step - First test completed
+        this.unlock('first_step');
+
+        // sharpshooter - 100% accuracy
+        if (stats.accuracy === 100) {
+            this.unlock('sharpshooter');
+        }
+
+        // hot_hands - 80+ WPM
+        if (stats.wpm >= 80) {
+            this.unlock('hot_hands');
+        }
+
+        // like_wind - 100+ WPM
+        if (stats.wpm >= 100) {
+            this.unlock('like_wind');
+        }
+
+        // diamond - 100% accuracy AND 100+ WPM
+        if (stats.accuracy === 100 && stats.wpm >= 100) {
+            this.unlock('diamond');
+        }
+
+        // marathon - 150+ words in 60s mode
+        if (this.app.state.duration === 60 && stats.correctWords >= 150) {
+            this.unlock('marathon');
+        }
+
+        // persistent - 10 tests in one session
+        if (this.sessionTests >= 10) {
+            this.unlock('persistent');
+        }
+        this.progress.persistent = Math.min(this.sessionTests, 10);
+
+        // perfectionist - 3 consecutive tests with 95%+ accuracy
+        if (stats.accuracy >= 95) {
+            this.streaks.accuracy95++;
+            if (this.streaks.accuracy95 >= 3) {
+                this.unlock('perfectionist');
+            }
+        } else {
+            this.streaks.accuracy95 = 0;
+        }
+        this.progress.perfectionist = Math.min(this.streaks.accuracy95, 3);
+
+        // night_owl - Test between 00:00 and 05:00
+        const hour = new Date().getHours();
+        if (hour >= 0 && hour < 5) {
+            this.unlock('night_owl');
+        }
+
+        this.save();
+    }
+
+    // Called when personal best is beaten
+    checkPBBeaten(duration) {
+        this.stats.pbBeaten++;
+        this.progress.rising = Math.min(this.stats.pbBeaten, 5);
+
+        // rising - Beat PB 5 times
+        if (this.stats.pbBeaten >= 5) {
+            this.unlock('rising');
+        }
+
+        // champion - Beat PB in all 3 durations
+        this.championModes.add(duration);
+        this.progress.champion = this.championModes.size;
+        if (this.championModes.size >= 3) {
+            this.unlock('champion');
+        }
+
+        this.save();
+    }
+
+    // Called during typing for fast_start
+    checkFastStart(wordsTyped, elapsedSeconds) {
+        if (elapsedSeconds <= 5 && wordsTyped >= 5) {
+            this.unlock('fast_start');
+        }
+    }
+
+    getProgress(id) {
+        const achievement = this.achievements[id];
+        if (!achievement || !achievement.maxProgress) return null;
+
+        const current = this.progress[id] || 0;
+        return { current, max: achievement.maxProgress };
+    }
+
+    isUnlocked(id) {
+        return this.unlocked.has(id);
+    }
+
+    getAll() {
+        return Object.values(this.achievements).map(a => ({
+            ...a,
+            unlocked: this.unlocked.has(a.id),
+            progress: this.getProgress(a.id)
+        }));
+    }
+
+    getUnlockedCount() {
+        return this.unlocked.size;
+    }
+
+    getTotalCount() {
+        return Object.keys(this.achievements).length;
+    }
+}
+
+// ═══════════════════════════════════════════
 // MAIN CLASS
 // ═══════════════════════════════════════════
 
 class FastFingers {
     constructor() {
         this.soundManager = new SoundManager();
+        this.achievementManager = new AchievementManager(this);
 
         this.els = {
             startScreen: document.getElementById('startScreen'),
@@ -231,7 +562,12 @@ class FastFingers {
             shareBtn: document.getElementById('shareBtn'),
             pauseOverlay: document.getElementById('pauseOverlay'),
             resumeBtn: document.getElementById('resumeBtn'),
-            quitBtn: document.getElementById('quitBtn')
+            quitBtn: document.getElementById('quitBtn'),
+            achievementBtn: document.getElementById('achievementBtn'),
+            achievementCount: document.getElementById('achievementCount'),
+            achievementModal: document.getElementById('achievementModal'),
+            achievementGrid: document.getElementById('achievementGrid'),
+            achievementClose: document.getElementById('achievementClose')
         };
 
         this.state = {
@@ -298,71 +634,24 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     async loadSentences() {
-        // Embedded sentences (fallback for file:// protocol)
-        const embeddedData = {
-            easy: [
-                "Bugün hava çok güzel.",
-                "Kedim uyumayı seviyor.",
-                "Çay içmek istiyorum.",
-                "Yarın okula gideceğim.",
-                "Bu kitap çok güzel.",
-                "Annem yemek yapıyor.",
-                "Babam işe gitti.",
-                "Arkadaşım beni aradı.",
-                "Pencereyi açar mısın?",
-                "Kapıyı kapat lütfen.",
-                "Su içmek istiyorum.",
-                "Kahvaltı hazır mı?",
-                "Akşam yemeği nedir?",
-                "Saat kaç oldu?",
-                "Bugün pazartesi günü.",
-                "Hava soğuk olmuş.",
-                "Güneş çok parlak.",
-                "Yağmur yağacak mı?",
-                "Kar yağıyor dışarıda.",
-                "Rüzgar çok sert esiyor."
-            ],
-            medium: [
-                "Teknoloji hayatımızı her geçen gün daha fazla etkiliyor.",
-                "Kitap okumak, hayal gücünü geliştiren güzel bir aktivitedir.",
-                "Spor yapmak hem fiziksel, hem de zihinsel sağlık için önemlidir.",
-                "Müzik dinlemek, stresi azaltmanın en etkili yollarından biridir.",
-                "Yabancı dil öğrenmek yeni kapılar açar ve ufku genişletir.",
-                "Doğa yürüyüşleri, temiz hava almak için harika bir fırsattır.",
-                "Sağlıklı beslenme alışkanlıkları küçük yaşta kazanılmalıdır.",
-                "Her gün düzenli egzersiz yapmak, sağlıklı yaşamın anahtarıdır.",
-                "Yazılım geliştirme, sürekli öğrenmeyi gerektiren bir meslektir.",
-                "Programlama, mantıksal düşünme yeteneğini önemli ölçüde geliştirir."
-            ],
-            hard: [
-                "Yapay zeka teknolojisi; günümüzde hızla gelişmeye devam etmekte, sağlık ve eğitim gibi birçok sektörü kökten dönüştürmektedir.",
-                "Kuantum bilgisayarlar, geleneksel silikon tabanlı işlemcilerin çözemediği karmaşık problemleri saniyeler içinde çözebilir.",
-                "Sürdürülebilir kalkınma hedefleri, ekonomik büyüme ile çevresel koruma arasında hassas bir denge kurmayı amaçlamaktadır.",
-                "Makine öğrenmesi algoritmaları, devasa veri setlerinden anlamlı örüntüler çıkararak stratejik kararlar alabilir.",
-                "Blockchain teknolojisi; merkeziyetsiz, değiştirilemez ve şeffaf işlem kayıtları sağlayarak finans dünyasını sarsmaktadır."
-            ],
-            expert: [
-                "Epistemoloji; bilginin doğası, kaynağı, kapsamı ve geçerliliği üzerine derinlemesine sorgulamalar yapan felsefi bir disiplindir.",
-                "Heisenberg'in Belirsizlik İlkesi'ne göre; bir atom altı parçacığın konumu ve momentumu aynı anda, kesin bir doğrulukla ölçülemez.",
-                "Schrödinger'in Kedisi düşünce deneyi, kuantum süperpozisyon ilkesini açıklamak için kullanılır; kedi, gözlem yapılana kadar hem ölü hem de canlı durumundadır.",
-                "Görelilik Teorisi'ne göre; ışık hızına yaklaşan bir cisim için zaman, durgun bir gözlemciye kıyasla daha yavaş akar.",
-                "Nöromorfik mühendislik; geleneksel von Neumann mimarisinin darboğazlarını aşmak için, insan beyninin nöron yapısını taklit eden donanımlar geliştirmeyi hedefler."
-            ]
-        };
-
-        try {
-            const response = await fetch('sentences.json');
-            if (!response.ok) throw new Error('HTTP error');
-            const data = await response.json();
+        // Use SENTENCES_DATA from sentences.js (works on file:// protocol)
+        if (typeof SENTENCES_DATA !== 'undefined') {
             this.state.sentencePools = {
-                easy: data.easy || embeddedData.easy,
-                medium: data.medium || embeddedData.medium,
-                hard: data.hard || embeddedData.hard,
-                expert: data.expert || embeddedData.expert
+                easy: SENTENCES_DATA.easy || [],
+                medium: SENTENCES_DATA.medium || [],
+                hard: SENTENCES_DATA.hard || [],
+                expert: SENTENCES_DATA.expert || []
             };
-        } catch (error) {
-            console.log('Using embedded sentences (file:// mode)');
-            this.state.sentencePools = embeddedData;
+            console.log('Sentences loaded from sentences.js');
+        } else {
+            console.error('SENTENCES_DATA not found! Make sure sentences.js is loaded.');
+            // Minimal fallback
+            this.state.sentencePools = {
+                easy: ["Cümle yüklenemedi lütfen sayfayı yenileyin"],
+                medium: ["Cümle yüklenemedi lütfen sayfayı yenileyin"],
+                hard: ["Cümle yüklenemedi lütfen sayfayı yenileyin"],
+                expert: ["Cümle yüklenemedi lütfen sayfayı yenileyin"]
+            };
         }
     }
 
@@ -470,6 +759,7 @@ class FastFingers {
 
         if (isNewRecord) {
             this.soundManager.playAchievement();
+            this.achievementManager.checkPBBeaten(this.state.duration);
             localStorage.setItem(key, JSON.stringify({
                 wpm: stats.wpm,
                 accuracy: stats.accuracy,
@@ -614,6 +904,13 @@ class FastFingers {
                 }
             }
 
+            // Space key to resume from pause
+            if (e.key === ' ' && this.state.isRunning && this.state.isPaused) {
+                e.preventDefault();
+                this.resume();
+                return;
+            }
+
             // Start screen shortcuts (Enter/Space)
             if (!this.els.startScreen.classList.contains('hidden')) {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -634,6 +931,14 @@ class FastFingers {
         window.addEventListener('focus', () => {
             if (this.state.isRunning && !this.state.isPaused) this.els.typingInput?.focus();
         });
+
+        // Achievement modal
+        this.els.achievementBtn?.addEventListener('click', () => this.openAchievementModal());
+        this.els.achievementClose?.addEventListener('click', () => this.closeAchievementModal());
+        this.els.achievementModal?.querySelector('.achievement-modal__backdrop')?.addEventListener('click', () => this.closeAchievementModal());
+
+        // Update achievement count on load
+        this.updateAchievementCount();
     }
 
     selectMode(btn) {
@@ -707,6 +1012,65 @@ class FastFingers {
         this.els.typingArea.classList.add('hidden');
         this.els.resultsScreen.classList.add('hidden');
         this.els.startScreen.classList.remove('hidden');
+    }
+
+    // ═══════════════════════════════════════════
+    // ACHIEVEMENT MODAL
+    // ═══════════════════════════════════════════
+
+    openAchievementModal() {
+        this.renderAchievements();
+        this.els.achievementModal?.classList.remove('hidden');
+    }
+
+    closeAchievementModal() {
+        this.els.achievementModal?.classList.add('hidden');
+    }
+
+    renderAchievements() {
+        if (!this.els.achievementGrid) return;
+
+        const achievements = this.achievementManager.getAll();
+
+        // Sort by tier, then by unlocked status
+        achievements.sort((a, b) => {
+            if (a.tier !== b.tier) return a.tier - b.tier;
+            if (a.unlocked !== b.unlocked) return b.unlocked ? 1 : -1;
+            return 0;
+        });
+
+        this.els.achievementGrid.innerHTML = achievements.map(a => {
+            const statusClass = a.unlocked ? 'unlocked' : 'locked';
+            const displayName = a.hidden && !a.unlocked ? '???' : a.name;
+            const displayDesc = a.hidden && !a.unlocked ? (a.hint || '???') : a.description;
+            const displayIcon = a.hidden && !a.unlocked ? '❓' : a.icon;
+
+            let progressHtml = '';
+            if (a.progress && !a.unlocked) {
+                const percent = (a.progress.current / a.progress.max) * 100;
+                progressHtml = `
+                    <div class="achievement-card__progress">
+                        <div class="achievement-card__progress-bar" style="width: ${percent}%"></div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="achievement-card ${statusClass}">
+                    <div class="achievement-card__icon">${displayIcon}</div>
+                    <div class="achievement-card__name">${displayName}</div>
+                    <div class="achievement-card__desc">${displayDesc}</div>
+                    ${progressHtml}
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateAchievementCount() {
+        if (!this.els.achievementCount) return;
+        const unlocked = this.achievementManager.getUnlockedCount();
+        const total = this.achievementManager.getTotalCount();
+        this.els.achievementCount.textContent = `${unlocked}/${total}`;
     }
 
     // ═══════════════════════════════════════════
@@ -864,6 +1228,10 @@ class FastFingers {
 
         this.els.typingArea.classList.add('hidden');
         this.els.resultsScreen.classList.remove('hidden');
+
+        // Check achievements
+        this.achievementManager.checkAll(stats);
+        this.updateAchievementCount();
     }
 
     // ═══════════════════════════════════════════
@@ -957,6 +1325,12 @@ class FastFingers {
         }
 
         this.updateLiveStats();
+
+        // Check fast_start achievement (5+ words in first 5 seconds)
+        if (this.state.startTime) {
+            const elapsed = (Date.now() - this.state.startTime) / 1000;
+            this.achievementManager.checkFastStart(this.state.correctWords, elapsed);
+        }
     }
 
     // ═══════════════════════════════════════════

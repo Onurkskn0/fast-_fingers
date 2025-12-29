@@ -71,6 +71,10 @@
                     <line x1="8" y1="16" x2="16" y2="16" />
                 </svg>
             </button>
+            <button class="achievement-btn" id="achievementBtn" aria-label="Başarımlar">
+                <span class="achievement-btn__icon">🏆</span>
+                <span class="achievement-btn__count" id="achievementCount">0/12</span>
+            </button>
         </header>
 
         <!-- Start Screen -->
@@ -243,7 +247,7 @@
                         <span>✕</span> VAZGEÇ
                     </button>
                 </div>
-                <p class="pause-shortcut"><kbd>ESC</kbd> ile devam</p>
+                <p class="pause-shortcut"><kbd>space</kbd> veya <kbd>ESC</kbd> ile devam</p>
             </div>
         </div>
 
@@ -263,6 +267,21 @@
         </footer>
     </div>
 
+    <!-- Achievement Gallery Modal -->
+    <div class="achievement-modal hidden" id="achievementModal">
+        <div class="achievement-modal__backdrop"></div>
+        <div class="achievement-modal__content">
+            <div class="achievement-modal__header">
+                <h2>🏆 Başarımlar</h2>
+                <button class="achievement-modal__close" id="achievementClose">✕</button>
+            </div>
+            <div class="achievement-modal__grid" id="achievementGrid">
+                <!-- Achievements will be rendered here by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="sentences.js"></script>
     <script src="app.js"></script>
 </body>
 
