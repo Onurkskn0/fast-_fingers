@@ -630,6 +630,7 @@ class FastFingers {
             sharePreviewLoader: document.getElementById('sharePreviewLoader'),
             shareThemeDark: document.getElementById('shareThemeDark'),
             shareThemeLight: document.getElementById('shareThemeLight'),
+            shareThemeHC: document.getElementById('shareThemeHC'),
             shareCustomText: document.getElementById('shareCustomText'),
             shareDownloadBtn: document.getElementById('shareDownloadBtn'),
             shareCopyBtn: document.getElementById('shareCopyBtn'),
@@ -1457,31 +1458,19 @@ class FastFingers {
         // ctx.scale(dpr, dpr);
 
         // Theme Definitions (matching styles.css)
+        // Theme Definitions (matching styles.css)
         const themes = {
-            dark: { bg: '#0D0D0D', fg: '#E8E4D9', muted: '#7A7A6C', accent: '#FFB347', border: '#2A2A2A', surface: '#1A1A1A' },
-            light: { bg: '#FAF9F6', fg: '#1A1A1B', muted: '#6F6F76', accent: '#EA9D34', border: '#E2E2E5', surface: '#FFFFFF' }
+            dark: { bg: '#0D0D0D', fg: '#E8E4D9', muted: '#D4D4D4', accent: '#FFB347', border: '#2A2A2A', surface: '#1A1A1A' }, // Muted: Platinum
+            light: { bg: '#FAF9F6', fg: '#1A1A1B', muted: '#222222', accent: '#EA9D34', border: '#E2E2E5', surface: '#FFFFFF' }, // Muted: Near Black
+            'high-contrast': { bg: '#000000', fg: '#FFFFFF', muted: '#FFFF00', accent: '#00FFFF', border: '#FFFFFF', surface: '#000000' }
         };
 
+        // Use selected theme explicitly. If user wants HC, they select it manually (or auto-selected on open).
         let colors = themes[themeName] || themes.dark;
 
-        // High Contrast Override
-        const isHighContrast = document.documentElement.classList.contains('high-contrast');
-        if (isHighContrast) {
-            // In High Contrast, "muted" things should be fully visible (white/yellow)
-            colors = {
-                ...colors,
-                bg: '#000000',
-                fg: '#FFFFFF',
-                muted: '#FFFF00', // Yellow for "muted" text to pop
-                accent: '#00FFFF', // Cyan or keep Orange? Let's use Cyan/Yellow for classic HC
-                border: '#FFFFFF'
-            };
-            // If user selected 'light' theme but global HC is on, we might want to respect the 'light' base 
-            // but usually HC implies dark. Let's just enhance the contrast of the *current* selection.
-            if (themeName === 'light') {
-                colors.muted = '#000000'; // Pure black for light theme HC
-            }
-        }
+        // Removed: Global High Contrast Override. 
+        // We now treat HC as a distinct selectable theme.
+        const isHighContrast = themeName === 'high-contrast';
 
         // Background
         ctx.fillStyle = colors.bg;
@@ -1500,7 +1489,7 @@ class FastFingers {
 
         // Date / Timestamp (Fixed Font & Contrast)
         ctx.fillStyle = isHighContrast ? colors.fg : colors.muted; // Use FG if HC, otherwise muted
-        ctx.font = '500 14px "Space Grotesk", sans-serif'; // Modern font
+        ctx.font = 'bold 16px "Space Grotesk", sans-serif'; // Increased size & weight
         ctx.textAlign = 'right';
         const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
         ctx.fillText(date, canvas.width - 50, 70);
@@ -1519,7 +1508,7 @@ class FastFingers {
         ctx.shadowBlur = 0; // Reset shadow
 
         ctx.fillStyle = colors.muted;
-        ctx.font = '20px "JetBrains Mono", monospace';
+        ctx.font = 'bold 24px "Space Grotesk", sans-serif'; // Increased WPM label
         ctx.fillText('WPM', centerX, centerY + 15);
 
         // Secondary Stats Row - REDESIGNED
@@ -1559,7 +1548,7 @@ class FastFingers {
 
             // Label (Modern, Uppercase, Spaced)
             ctx.fillStyle = colors.muted;
-            ctx.font = '500 12px "Space Grotesk", sans-serif'; // Removed "classic" monospace
+            ctx.font = 'bold 14px "Space Grotesk", sans-serif'; // Larger, Bolder
             // Letter spacing simulation (canvas doesn't support letter-spacing natively easily)
             // We'll just trust the font or draw manual if needed, but Space Grotesk is usually wide enough.
             ctx.fillText(stat.label.split('').join(String.fromCharCode(8202)), x, statsY + 30); // Hairline space hack for spacing
@@ -1599,8 +1588,10 @@ class FastFingers {
     shareResult() {
         this.els.shareModal.classList.remove('hidden');
 
-        // Initialize state
-        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        // Initialize state: Check global HC first
+        const isGlobalHC = document.documentElement.classList.contains('high-contrast');
+        const currentTheme = isGlobalHC ? 'high-contrast' : (document.documentElement.getAttribute('data-theme') || 'dark');
+
         this.activeShareTheme = currentTheme;
         this.updateShareThemeUI(currentTheme);
 
@@ -1617,12 +1608,17 @@ class FastFingers {
 
     updateShareThemeUI(theme) {
         this.activeShareTheme = theme;
+        // Reset all
+        this.els.shareThemeDark.classList.remove('active');
+        this.els.shareThemeLight.classList.remove('active');
+        if (this.els.shareThemeHC) this.els.shareThemeHC.classList.remove('active');
+
         if (theme === 'dark') {
             this.els.shareThemeDark.classList.add('active');
-            this.els.shareThemeLight.classList.remove('active');
-        } else {
-            this.els.shareThemeDark.classList.remove('active');
+        } else if (theme === 'light') {
             this.els.shareThemeLight.classList.add('active');
+        } else if (theme === 'high-contrast' && this.els.shareThemeHC) {
+            this.els.shareThemeHC.classList.add('active');
         }
     }
 
@@ -1719,6 +1715,12 @@ class FastFingers {
         if (this.els.shareThemeLight) {
             this.els.shareThemeLight.addEventListener('click', () => {
                 this.updateShareThemeUI('light');
+                this.refreshSharePreview();
+            });
+        }
+        if (this.els.shareThemeHC) {
+            this.els.shareThemeHC.addEventListener('click', () => {
+                this.updateShareThemeUI('high-contrast');
                 this.refreshSharePreview();
             });
         }
