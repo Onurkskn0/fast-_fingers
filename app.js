@@ -1431,9 +1431,11 @@ class FastFingers {
     resume() {
         if (!this.state.isPaused) return;
 
-        // Adjust start time to account for pause duration
-        const pauseDuration = Date.now() - this.state.pauseTime;
-        this.state.startTime += pauseDuration;
+        // Adjust start time to account for pause duration (only if timer was started)
+        if (this.state.startTime) {
+            const pauseDuration = Date.now() - this.state.pauseTime;
+            this.state.startTime += pauseDuration;
+        }
 
         this.state.isPaused = false;
         this.state.pauseTime = null;
@@ -1465,6 +1467,12 @@ class FastFingers {
             this.els.typingInput.disabled = false;
         }
         this.els.typingInput?.focus();
+
+        // CRITICAL: Restart the timer loop after resume
+        // Only if timer was already started (user had typed at least once)
+        if (this.state.startTime) {
+            this.loopTimer();
+        }
     }
 
     // ═══════════════════════════════════════════
