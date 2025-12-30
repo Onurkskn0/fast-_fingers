@@ -621,7 +621,19 @@ class FastFingers {
             enterHint: document.getElementById('enterHint'),
             enterHintItem: document.getElementById('enterHintItem'),
             spaceHint: document.getElementById('spaceHint'),
-            spaceHintItem: document.getElementById('spaceHintItem')
+            spaceHintItem: document.getElementById('spaceHintItem'),
+
+            // Share Modal Elements
+            shareModal: document.getElementById('shareModal'),
+            shareCloseBtn: document.getElementById('shareCloseBtn'),
+            sharePreviewResult: document.getElementById('sharePreviewResult'),
+            sharePreviewLoader: document.getElementById('sharePreviewLoader'),
+            shareThemeDark: document.getElementById('shareThemeDark'),
+            shareThemeLight: document.getElementById('shareThemeLight'),
+            shareCustomText: document.getElementById('shareCustomText'),
+            shareDownloadBtn: document.getElementById('shareDownloadBtn'),
+            shareCopyBtn: document.getElementById('shareCopyBtn'),
+            shareTweetBtn: document.getElementById('shareTweetBtn')
         };
 
         this.state = {
@@ -689,6 +701,7 @@ class FastFingers {
         // precise UI update for duration handled by inline script in index.html to prevent FOUC
 
         this.bindEvents();
+        this.bindShareEvents();
         this.els.timer = this.els.countdown?.closest('.timer');
     }
 
@@ -1434,89 +1447,301 @@ class FastFingers {
     // SHARE
     // ═══════════════════════════════════════════
 
-    async shareResult() {
+    async renderShareImage(themeName, customText) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1; // High res
 
-        canvas.width = 800;
-        canvas.height = 420;
+        canvas.width = 800; // * dpr;
+        canvas.height = 450; // * dpr;
+        // ctx.scale(dpr, dpr);
+
+        // Theme Definitions (matching styles.css)
+        const themes = {
+            dark: { bg: '#0D0D0D', fg: '#E8E4D9', muted: '#7A7A6C', accent: '#FFB347', border: '#2A2A2A', surface: '#1A1A1A' },
+            light: { bg: '#FAF9F6', fg: '#1A1A1B', muted: '#6F6F76', accent: '#EA9D34', border: '#E2E2E5', surface: '#FFFFFF' }
+        };
+
+        let colors = themes[themeName] || themes.dark;
+
+        // High Contrast Override
+        const isHighContrast = document.documentElement.classList.contains('high-contrast');
+        if (isHighContrast) {
+            // In High Contrast, "muted" things should be fully visible (white/yellow)
+            colors = {
+                ...colors,
+                bg: '#000000',
+                fg: '#FFFFFF',
+                muted: '#FFFF00', // Yellow for "muted" text to pop
+                accent: '#00FFFF', // Cyan or keep Orange? Let's use Cyan/Yellow for classic HC
+                border: '#FFFFFF'
+            };
+            // If user selected 'light' theme but global HC is on, we might want to respect the 'light' base 
+            // but usually HC implies dark. Let's just enhance the contrast of the *current* selection.
+            if (themeName === 'light') {
+                colors.muted = '#000000'; // Pure black for light theme HC
+            }
+        }
 
         // Background
-        ctx.fillStyle = '#0D0D0D';
+        ctx.fillStyle = colors.bg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Border
-        ctx.strokeStyle = '#FFB347';
-        ctx.lineWidth = 3;
+        // Decorative Border (Glassmorphism hint)
+        ctx.strokeStyle = colors.border;
+        ctx.lineWidth = 1;
         ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
         // Logo
-        ctx.fillStyle = '#FFB347';
-        ctx.font = 'bold 28px sans-serif';
+        ctx.fillStyle = colors.accent;
+        ctx.font = 'bold 24px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('▸ fastfingers', 50, 70);
+
+        // Date / Timestamp (Fixed Font & Contrast)
+        ctx.fillStyle = isHighContrast ? colors.fg : colors.muted; // Use FG if HC, otherwise muted
+        ctx.font = '500 14px "Space Grotesk", sans-serif'; // Modern font
+        ctx.textAlign = 'right';
+        const date = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        ctx.fillText(date, canvas.width - 50, 70);
+
+        // Stats Container
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        // Main WPM
+        ctx.fillStyle = colors.accent;
+        ctx.font = 'bold 100px "Space Grotesk", sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('▸ fastfingers', canvas.width / 2, 70);
+        ctx.shadowColor = themeName === 'dark' ? 'rgba(255, 179, 71, 0.2)' : 'transparent';
+        ctx.shadowBlur = themeName === 'dark' ? 20 : 0;
+        ctx.fillText(this.els.finalWpm.textContent, centerX, centerY - 20);
+        ctx.shadowBlur = 0; // Reset shadow
 
-        // WPM (main stat)
-        ctx.fillStyle = '#FFB347';
-        ctx.font = 'bold 120px sans-serif';
-        ctx.fillText(this.els.finalWpm.textContent, canvas.width / 2, 200);
+        ctx.fillStyle = colors.muted;
+        ctx.font = '20px "JetBrains Mono", monospace';
+        ctx.fillText('WPM', centerX, centerY + 15);
 
-        ctx.fillStyle = '#7A7A6C';
-        ctx.font = '20px monospace';
-        ctx.fillText('WPM', canvas.width / 2, 230);
-
-        // Stats row
+        // Secondary Stats Row - REDESIGNED
+        const statsY = centerY + 80;
         const stats = [
             { label: 'DOĞRULUK', value: this.els.finalAccuracy.textContent },
             { label: 'KARAKTER', value: this.els.finalChars.textContent },
             { label: 'KELİME', value: this.els.finalWords.textContent }
         ];
 
-        // Add SÜRE for infinite mode (check if time field is visible)
+        // Add SÜRE if infinite mode
         const finalTimeItem = document.getElementById('finalTimeItem');
         const finalTime = document.getElementById('finalTime');
         const isInfiniteMode = finalTimeItem && !finalTimeItem.classList.contains('hidden');
-
         if (isInfiniteMode && finalTime && finalTime.textContent) {
             stats.push({ label: 'SÜRE', value: finalTime.textContent });
         }
 
-        const startX = isInfiniteMode ? 100 : 160;
-        const gap = isInfiniteMode ? 175 : 240;
+        // Center-distributed layout
+        const totalStats = stats.length;
+        // Total width of the stats area: 
+        // 3 items * 160px gap = 320px span roughly? No, let's spread them.
+        // Canvas width 800. 
+        // Division: 800 / (total + 1)
+
+        ctx.textAlign = 'center';
 
         stats.forEach((stat, i) => {
-            const x = startX + i * gap;
-            ctx.fillStyle = '#E8E4D9';
-            ctx.font = 'bold 32px sans-serif';
-            ctx.fillText(stat.value, x, 310);
+            // Distribute evenly across the width
+            // e.g. 3 items: 25%, 50%, 75%
+            const x = (canvas.width / (totalStats + 1)) * (i + 1);
 
-            ctx.fillStyle = '#7A7A6C';
-            ctx.font = '14px monospace';
-            ctx.fillText(stat.label, x, 340);
+            // Value (Modern, Bold)
+            ctx.fillStyle = colors.fg;
+            ctx.font = '700 36px "Space Grotesk", sans-serif';
+            ctx.fillText(stat.value, x, statsY);
+
+            // Label (Modern, Uppercase, Spaced)
+            ctx.fillStyle = colors.muted;
+            ctx.font = '500 12px "Space Grotesk", sans-serif'; // Removed "classic" monospace
+            // Letter spacing simulation (canvas doesn't support letter-spacing natively easily)
+            // We'll just trust the font or draw manual if needed, but Space Grotesk is usually wide enough.
+            ctx.fillText(stat.label.split('').join(String.fromCharCode(8202)), x, statsY + 30); // Hairline space hack for spacing
+
+            // Optional: Divider Line between items (except last)
+            if (i < totalStats - 1) {
+                const nextX = (canvas.width / (totalStats + 1)) * (i + 2);
+                const midX = (x + nextX) / 2;
+
+                ctx.strokeStyle = colors.border;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(midX, statsY - 20);
+                ctx.lineTo(midX, statsY + 30);
+                ctx.stroke();
+            }
         });
 
-        // Footer
-        ctx.fillStyle = '#7A7A6C';
-        ctx.font = '14px monospace';
-        ctx.fillText(`${this.state.duration === -1 ? 'Sonsuz' : this.state.duration + 's'} mod`, canvas.width / 2, 390);
+        // Custom Text (Taunt/Note) - Enhanced Typography
+        if (customText) {
+            ctx.fillStyle = colors.accent; // Make it pop
+            ctx.font = 'italic 500 18px "Space Grotesk", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`"${customText}"`, centerX, canvas.height - 40);
+        } else {
+            // Footer Mode Info - MORE PROMINENT
+            ctx.fillStyle = colors.fg; // Was muted, now foreground for visibility
+            ctx.font = '700 14px "Space Grotesk", sans-serif'; // Larger and bolder
+            ctx.textAlign = 'center';
+            const modeText = `${this.state.duration === -1 ? 'SONSUZ' : this.state.duration + ' SANİYE'} MOD`;
+            ctx.fillText(modeText.split('').join(String.fromCharCode(8202)), centerX, canvas.height - 40);
+        }
 
-        // Create blob and copy/download
-        canvas.toBlob(async (blob) => {
+        return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    }
+
+    shareResult() {
+        this.els.shareModal.classList.remove('hidden');
+
+        // Initialize state
+        const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+        this.activeShareTheme = currentTheme;
+        this.updateShareThemeUI(currentTheme);
+
+        // Clear input
+        this.els.shareCustomText.value = '';
+
+        // Initial Render
+        this.refreshSharePreview();
+    }
+
+    closeShareModal() {
+        this.els.shareModal.classList.add('hidden');
+    }
+
+    updateShareThemeUI(theme) {
+        this.activeShareTheme = theme;
+        if (theme === 'dark') {
+            this.els.shareThemeDark.classList.add('active');
+            this.els.shareThemeLight.classList.remove('active');
+        } else {
+            this.els.shareThemeDark.classList.remove('active');
+            this.els.shareThemeLight.classList.add('active');
+        }
+    }
+
+    async refreshSharePreview() {
+        if (!this.els.sharePreviewResult) return;
+
+        this.els.sharePreviewLoader.classList.remove('hidden');
+        const customText = this.els.shareCustomText.value || '';
+
+        const blob = await this.renderShareImage(this.activeShareTheme, customText);
+        const url = URL.createObjectURL(blob);
+
+        // Revoke old url to prevent memory leaks if exists
+        if (this.lastShareUrl) URL.revokeObjectURL(this.lastShareUrl);
+        this.lastShareUrl = url;
+
+        this.els.sharePreviewResult.src = url;
+
+        // Wait for load to hide loader
+        this.els.sharePreviewResult.onload = () => {
+            this.els.sharePreviewLoader.classList.add('hidden');
+        };
+
+        this.currentShareBlob = blob;
+    }
+
+    async handleDownload() {
+        if (!this.currentShareBlob) return;
+        const url = URL.createObjectURL(this.currentShareBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fastfingers-result.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    async handleCopy() {
+        if (!this.currentShareBlob) return;
+        try {
+            await navigator.clipboard.write([
+                new ClipboardItem({ 'image/png': this.currentShareBlob })
+            ]);
+            this.showToast('Görsel panoya kopyalandı! 📋');
+        } catch (err) {
+            this.showToast('Kopyalama başarısız, lütfen indirmeyi deneyin.');
+        }
+    }
+
+    async tweetResult() {
+        // Try to copy image first for smoother UX
+        if (this.currentShareBlob) {
             try {
                 await navigator.clipboard.write([
-                    new ClipboardItem({ 'image/png': blob })
+                    new ClipboardItem({ 'image/png': this.currentShareBlob })
                 ]);
-                this.showToast('Sonuç panoya kopyalandı! 📋');
-            } catch (err) {
-                // Fallback: download
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `fastfingers-${this.els.finalWpm.textContent}wpm.png`;
-                a.click();
-                URL.revokeObjectURL(url);
+                this.showToast('Görsel kopyalandı! Tweet\'e yapıştırın (Ctrl+V) 🐦', 4000);
+            } catch (e) {
+                this.showToast('Görseli indirin ve tweet\'e ekleyin ⬇️', 4000);
             }
-        }, 'image/png');
+        }
+
+        const wpm = this.els.finalWpm.textContent;
+        const acc = this.els.finalAccuracy.textContent;
+        const text = `${wpm} WPM | ${acc} Doğruluk ile testi tamamladım! 🚀\n\nSen de hızını test et:`;
+        const url = 'https://fastfingers.app';
+        const hashtags = 'fastfingers,typingtest,yazıhızı';
+
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}&hashtags=${hashtags}`;
+
+        // Slight delay to let the toast appear before tab switch (optional but nice)
+        setTimeout(() => {
+            window.open(twitterUrl, '_blank');
+        }, 500);
+    }
+
+    bindShareEvents() {
+        // Modal Close
+        if (this.els.shareCloseBtn) {
+            this.els.shareCloseBtn.addEventListener('click', () => this.closeShareModal());
+        }
+        if (this.els.shareModal) {
+            this.els.shareModal.addEventListener('click', (e) => {
+                if (e.target === this.els.shareModal) this.closeShareModal();
+            });
+        }
+
+        // Theme Toggles
+        if (this.els.shareThemeDark) {
+            this.els.shareThemeDark.addEventListener('click', () => {
+                this.updateShareThemeUI('dark');
+                this.refreshSharePreview();
+            });
+        }
+        if (this.els.shareThemeLight) {
+            this.els.shareThemeLight.addEventListener('click', () => {
+                this.updateShareThemeUI('light');
+                this.refreshSharePreview();
+            });
+        }
+
+        // Custom Text Input (Debounced)
+        if (this.els.shareCustomText) {
+            let debounceTimer;
+            this.els.shareCustomText.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => this.refreshSharePreview(), 300);
+            });
+        }
+
+        // Action Buttons
+        if (this.els.shareDownloadBtn) {
+            this.els.shareDownloadBtn.addEventListener('click', () => this.handleDownload());
+        }
+        if (this.els.shareCopyBtn) {
+            this.els.shareCopyBtn.addEventListener('click', () => this.handleCopy());
+        }
+        if (this.els.shareTweetBtn) {
+            this.els.shareTweetBtn.addEventListener('click', () => this.tweetResult());
+        }
     }
 
     showToast(message, duration = 3000) {
@@ -1565,6 +1790,14 @@ class FastFingers {
             return;
         }
 
+        // SANITY CHECK: Ensure startTime is a valid recent timestamp (e.g. > Jan 1 2025)
+        // This prevents the "56 years" bug (29450931:57) where startTime is near 0
+        if (this.state.startTime < 1735689600000) {
+            console.warn('Invalid startTime detected in finish():', this.state.startTime);
+            this.goHome();
+            return;
+        }
+
         // IMPORTANT: Capture end time ONCE at the very start
         // If paused, use pauseTime to avoid counting pause duration
         const capturedEndTime = this.state.isPaused && this.state.pauseTime
@@ -1607,7 +1840,13 @@ class FastFingers {
             const finalTime = document.getElementById('finalTime');
             if (finalTimeItem) finalTimeItem.classList.remove('hidden');
 
-            const elapsedSeconds = Math.floor((capturedEndTime - this.state.startTime) / 1000);
+            let elapsedSeconds = Math.floor((capturedEndTime - this.state.startTime) / 1000);
+
+            // Safety cap: If duration > 24 hours, show 00:00 or handle gracefully
+            if (elapsedSeconds > 86400 || elapsedSeconds < 0) {
+                elapsedSeconds = 0;
+            }
+
             const mins = Math.floor(elapsedSeconds / 60);
             const secs = elapsedSeconds % 60;
             if (finalTime) finalTime.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;

@@ -372,6 +372,53 @@
             </div>
         </div>
 
+        <!-- Share Modal -->
+        <div class="share-modal hidden" id="shareModal">
+            <div class="share-card">
+                <div class="share-header">
+                    <h2 class="share-title">SONUCU PAYLAŞ</h2>
+                    <button class="share-close" id="shareCloseBtn">✕</button>
+                </div>
+
+                <div class="share-preview-container">
+                    <img id="sharePreviewResult" class="share-preview-img" alt="Sonuç Önizleme">
+                    <div class="share-preview-loader hidden" id="sharePreviewLoader">Görsel hazırlanıyor...</div>
+                </div>
+
+                <div class="share-controls">
+                    <div class="share-control-group">
+                        <label class="share-label">Tema</label>
+                        <div class="theme-toggles">
+                            <button class="theme-toggle-btn active" data-share-theme="dark"
+                                id="shareThemeDark">KOYU</button>
+                            <button class="theme-toggle-btn" data-share-theme="light" id="shareThemeLight">AÇIK</button>
+                        </div>
+                    </div>
+                    <div class="share-control-group flex-grow">
+                        <label class="share-label" for="shareCustomText">Özel Mesaj</label>
+                        <input type="text" id="shareCustomText" class="share-input" placeholder="Notun (opsiyonel)..."
+                            maxlength="40">
+                    </div>
+                </div>
+
+                <div class="share-actions">
+                    <button class="btn btn--secondary" id="shareDownloadBtn">
+                        <span>⬇</span> İNDİR
+                    </button>
+                    <button class="btn btn--primary" id="shareCopyBtn">
+                        <span>📋</span> KOPYALA
+                    </button>
+                    <button class="btn btn--twitter" id="shareTweetBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                            fill="currentColor">
+                            <path
+                                d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                        </svg> PAYLAŞ
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <div class="key-legend">
