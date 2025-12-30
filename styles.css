@@ -2640,6 +2640,53 @@ kbd {
 }
 
 /* ═══════════════════════════════════════════
+   RESPONSIVE DESIGN - TABLET/LAPTOP (max-width: 880px)
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 880px) {
+
+    /* Finish Button (Absolute Inside Strategy) */
+    .input-wrapper {
+        position: relative;
+        /* Ensure context */
+        padding-right: 0;
+    }
+
+    .typing-input {
+        width: 100%;
+        height: 100%;
+        padding-right: 6rem !important;
+        /* SAFETY ZONE for button */
+        padding-top: 2px;
+    }
+
+    .btn--finish {
+        position: absolute;
+        top: 50%;
+        right: 6px;
+        /* Fixed distance from edge */
+        transform: translateY(-50%);
+        margin: 0;
+        z-index: 20;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.85rem;
+        height: auto;
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+        order: unset;
+    }
+
+    /* FIX: Prevent hover jump - keep it centered */
+    .btn--finish:hover {
+        transform: translateY(-50%) !important;
+        /* Override global hover lift */
+    }
+}
+
+/* ═══════════════════════════════════════════
    RESPONSIVE DESIGN - LARGE MOBILE (max-width: 640px)
    ═══════════════════════════════════════════ */
 
@@ -2682,4 +2729,78 @@ kbd {
     html.large-text .stat-item__value {
         font-size: 1.1rem !important;
     }
+
+    /* Hide generic submit btn in infinite mode on mobile */
+    .infinite-mode #submitBtn,
+    .infinite-mode .submit-btn {
+        display: none !important;
+    }
+
+    /* ═══════════════════════════════════════════
+       MOBILE REDESIGN (640px) - FINAL
+       ═══════════════════════════════════════════ */
+
+    /* 1. Header & Timer */
+    .timer__value {
+        font-size: 2rem;
+    }
+
+    .header-actions {
+        gap: 0.5rem;
+    }
+
+    /* 2. Toggle Menu (Bottom Sheet) */
+    .a11y-panel {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        top: auto;
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        padding: var(--space-lg);
+        background: var(--bg-elevated);
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+        transform: translateY(0);
+        animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .a11y-panel.hidden {
+        display: none;
+    }
+
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    /* 3. Footer Shortcuts (Wrap & Align) */
+    .key-legend,
+    .pause-shortcut {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.5rem 1rem;
+        width: 100%;
+        line-height: normal;
+    }
+
+    .key-item,
+    .pause-shortcut span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    /* 4. Input & Finish Button (Inherited from 880px) */
+    /* No overrides needed here */
 }

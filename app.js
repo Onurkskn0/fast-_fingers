@@ -901,9 +901,11 @@ class FastFingers {
         if (this.state.duration === -1) {
             if (titleEl) titleEl.textContent = "SON DENEME";
             if (timeItem) timeItem.classList.remove('hidden');
+            document.body.classList.add('infinite-mode');
         } else {
             if (titleEl) titleEl.textContent = "EN İYİ SKOR";
             if (timeItem) timeItem.classList.add('hidden');
+            document.body.classList.remove('infinite-mode');
         }
 
         if (saved) {
