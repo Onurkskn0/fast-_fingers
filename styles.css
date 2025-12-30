@@ -938,8 +938,8 @@ html.high-contrast {
     background: var(--bg-elevated);
     opacity: 1;
     box-shadow: 0 0 20px var(--accent-glow);
-    transform: translateY(calc(-50% - 2px));
-    /* Maintain center + lift */
+    transform: translateY(-50%);
+    /* Stay centered, no lift */
 }
 
 /* Start Button */
