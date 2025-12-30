@@ -810,7 +810,27 @@ html.high-contrast {
 .stat-item {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    text-align: center;
     gap: var(--space-2xs);
+    position: relative;
+}
+
+/* Vertical separator between stat items */
+.stat-item:not(:last-child):not(.hidden)::after {
+    content: '|';
+    position: absolute;
+    right: calc(-1 * var(--space-md) / 2 - 2px);
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--border);
+    font-size: 1.25rem;
+    font-weight: 300;
+}
+
+/* Hide separator if next sibling is hidden */
+.stat-item:has(+ .hidden)::after {
+    display: none;
 }
 
 .stat-item__value {
