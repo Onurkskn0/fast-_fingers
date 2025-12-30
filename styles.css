@@ -2411,3 +2411,213 @@ kbd {
 .large-text .theme-toggle-btn {
     font-size: 0.9rem;
 }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE DESIGN - TABLET (max-width: 768px)
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* Layout */
+    .container {
+        padding: var(--space-md);
+        max-width: 100%;
+    }
+
+    .screen--start {
+        gap: var(--space-md);
+        padding: var(--space-lg) 0;
+        align-items: center;
+    }
+
+    .start-btn {
+        align-self: center;
+    }
+
+    /* Header */
+    .header {
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+        padding: var(--space-sm) 0;
+    }
+
+    .logo {
+        font-size: 1.25rem;
+    }
+
+    .controls {
+        gap: var(--space-sm);
+    }
+
+    /* Terminal */
+    .terminal {
+        padding: var(--space-sm);
+        width: 75%;
+    }
+
+    .terminal__cmd {
+        font-size: 0.875rem;
+    }
+
+    /* Stats Card - Maximize width */
+    .stats-card {
+        padding: var(--space-sm);
+        width: 75%;
+    }
+
+    .stats-card__grid {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: space-between;
+        gap: var(--space-xs);
+        width: 100%;
+    }
+
+    .stat-item__value {
+        font-size: 1.5rem;
+    }
+
+    .stat-item__label {
+        font-size: 0.6rem;
+    }
+
+    /* Adjust separators for tighter gap */
+    .stat-item {
+        flex: 1;
+        /* Ensure equal width */
+        justify-content: center;
+    }
+
+    .stat-item:not(:last-child):not(.hidden)::after {
+        right: calc(-1 * var(--space-xs) / 2);
+        /* Center in the XS gap */
+        font-size: 1rem;
+        /* Slightly smaller separator */
+    }
+
+    /* Duration Select */
+    .duration-select {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .duration-btns {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+    }
+
+    .mode-btn {
+        padding: var(--space-sm) var(--space-md);
+        font-size: 0.75rem;
+    }
+
+    /* Typing Area */
+    .typing-box {
+        padding: var(--space-lg) var(--space-md);
+        min-height: 120px;
+    }
+
+    .sentence {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+
+    .input-wrapper {
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .typing-input {
+        font-size: 1rem;
+    }
+
+    .btn--finish {
+        position: static;
+        width: auto;
+        transform: none;
+        margin-left: var(--space-xs);
+        padding: var(--space-xs) var(--space-sm);
+        white-space: nowrap;
+        order: 10;
+        /* Ensure it's at the end */
+    }
+
+    .btn--finish:hover {
+        transform: none;
+    }
+
+    /* Footer - Remove background */
+    .footer {
+        background: transparent;
+        border: none;
+        margin-top: 0;
+    }
+
+    /* Results */
+    .result-wpm {
+        font-size: 3.5rem;
+    }
+
+    .result-details {
+        gap: var(--space-md);
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .result-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* Share Modal */
+    .share-modal__content {
+        width: 95%;
+        padding: var(--space-lg);
+    }
+
+    .share-actions {
+        flex-direction: column;
+    }
+
+    /* Footer */
+    .footer {
+        position: relative;
+        margin-top: var(--space-lg);
+    }
+
+    .key-legend {
+        display: none;
+    }
+
+    .key-item {
+        font-size: 0.7rem;
+    }
+
+    /* Live Stats - Forced Horizontal Layout 
+       Prevent wrapping, compact sizing to fit 5 items */
+    .live-stats {
+        gap: var(--space-md);
+        flex-wrap: nowrap;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .live-stat {
+        flex: 1;
+        min-width: 0;
+        /* Allow shrinking */
+        align-items: center;
+        margin-bottom: 0;
+    }
+
+    .live-stat__value {
+        font-size: 1.25rem;
+    }
+
+    .live-stat__label {
+        font-size: 0.5rem;
+    }
+
+    .live-stat {
+        min-width: auto;
+    }
+}
