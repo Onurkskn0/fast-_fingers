@@ -2620,4 +2620,66 @@ kbd {
     .live-stat {
         min-width: auto;
     }
+
+    /* Large Text Mode Overrides for Tablet - Refined */
+    html.large-text .sentence {
+        font-size: 1.35rem !important;
+        line-height: 1.6;
+        letter-spacing: 0.01em;
+    }
+
+    html.large-text .typing-input {
+        font-size: 1.15rem !important;
+    }
+
+    html.large-text .live-stat__value {
+        font-size: 1.25rem !important;
+        letter-spacing: -0.02em;
+        /* Tighter numbers */
+    }
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE DESIGN - LARGE MOBILE (max-width: 640px)
+   ═══════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+
+    /* Stats Card - Zero Gap for Perfect Alignment */
+    .stats-card__grid {
+        gap: 0;
+        /* Remove gap to simplify separator positioning */
+    }
+
+    .stat-item {
+        padding: 0 var(--space-xs);
+        /* Internal spacing instead of gap */
+    }
+
+    /* Prevent overlap with separator */
+    .stat-item__value {
+        font-size: 1.1rem;
+    }
+
+    /* Perfectly centered separator on the shared edge */
+    .stat-item:not(:last-child):not(.hidden)::after {
+        right: 0;
+        transform: translateX(50%) translateY(-50%);
+        /* Centered on the line */
+        top: 50%;
+    }
+
+    /* Large Text Mode Overrides for Mobile - Further Reduced */
+    html.large-text .sentence {
+        font-size: 1.15rem !important;
+        line-height: 1.5;
+    }
+
+    html.large-text .typing-input {
+        font-size: 1.05rem !important;
+    }
+
+    html.large-text .stat-item__value {
+        font-size: 1.1rem !important;
+    }
 }
