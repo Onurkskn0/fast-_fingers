@@ -396,12 +396,23 @@ html.high-contrast {
 }
 
 /* Finish Button (Infinite Mode) */
+/* Finish Button (Infinite Mode - Fixed Safe Zone) */
 .large-text .btn--finish {
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.05em;
-    right: -8rem;
-    /* Closer in Large Text mode */
+    right: 0;
+    top: 100%;
+    transform: translateY(10px);
+    /* Move below input */
+    margin-top: var(--space-xs);
+    position: absolute;
+    width: auto;
+}
+
+.large-text .btn--finish:hover {
+    transform: translateY(8px);
+    box-shadow: 0 4px 12px var(--accent-glow);
 }
 
 /* Pause Screen */
@@ -1579,26 +1590,117 @@ kbd {
 @media (max-width: 600px) {
     .container {
         padding: var(--space-md);
+        min-height: 100dvh;
+        /* Modern mobile viewport fix */
+    }
+
+    /* 1. HIDE REQUESTED ELEMENTS */
+    .footer,
+    .pause-shortcut {
+        display: none !important;
+    }
+
+    /* 2. ADAPT 'SON DENEME' (Stats Card) */
+    .stats-card {
+        padding: var(--space-md);
     }
 
     .stats-card__grid {
-        gap: var(--space-sm);
+        grid-template-columns: repeat(2, 1fr);
+        /* 2x2 Grid for better readability */
+        gap: var(--space-md) var(--space-sm);
+    }
+
+    .stat-item::after {
+        display: none;
+        /* remove separators for cleaner grid look */
     }
 
     .stat-item__value {
-        font-size: 1.25rem;
+        font-size: 1.5rem;
     }
 
+    .pb-share-btn {
+        width: 32px;
+        height: 32px;
+        /* Touch target size optimization */
+    }
+
+    /* 3. ADAPT SHARE SCREEN (Mobile Bottom Sheet) */
+    .share-modal {
+        align-items: flex-end;
+        /* Align to bottom for sheet effect */
+        padding: 0;
+    }
+
+    .share-card {
+        width: 100%;
+        max-width: 100%;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        padding: var(--space-lg);
+        gap: var(--space-md);
+        border-bottom: none;
+        max-height: 85vh;
+        overflow-y: auto;
+        animation: sheetSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes sheetSlideUp {
+        from {
+            transform: translateY(100%);
+        }
+
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    .share-modal.hidden .share-card {
+        transform: translateY(100%);
+    }
+
+    .share-actions {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .share-actions .btn {
+        width: 100%;
+        padding: var(--space-md);
+        /* Larger touch area */
+    }
+
+    .share-controls {
+        flex-direction: column;
+        gap: var(--space-md);
+    }
+
+    .share-preview-container {
+        min-height: 140px;
+    }
+
+    /* General Mobile Polish */
     .sentence {
-        font-size: 1rem;
+        font-size: 1.1rem;
+        padding: 0 var(--space-xs);
     }
 
     .live-stats {
-        gap: var(--space-lg);
+        gap: var(--space-md);
+    }
+
+    .live-stat__value {
+        font-size: 1.5rem;
+    }
+
+    .result-main__value {
+        font-size: 4rem;
     }
 
     .result-details {
-        gap: var(--space-lg);
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-lg) var(--space-md);
     }
 }
 
@@ -2660,11 +2762,12 @@ kbd {
         padding-top: 2px;
     }
 
-    .btn--finish {
+    .btn--finish,
+    .submit-btn {
         position: absolute;
         top: 50%;
         right: 6px;
-        /* Fixed distance from edge */
+        /* Reverted to 6px (Tighter to edge) */
         transform: translateY(-50%);
         margin: 0;
         z-index: 20;
@@ -2677,12 +2780,14 @@ kbd {
         justify-content: center;
         white-space: nowrap;
         order: unset;
+        background: var(--accent);
+        color: var(--bg);
+        border-radius: var(--radius-md);
     }
 
-    /* FIX: Prevent hover jump - keep it centered */
-    .btn--finish:hover {
+    .btn--finish:hover,
+    .submit-btn:hover {
         transform: translateY(-50%) !important;
-        /* Override global hover lift */
     }
 }
 
@@ -2803,4 +2908,146 @@ kbd {
 
     /* 4. Input & Finish Button (Inherited from 880px) */
     /* No overrides needed here */
+}
+/* ===========================================
+    MOBILE CONTROL DECK (Floating Actions)
+   =========================================== */
+
+.mobile-controls-deck {
+    display: none; /* Hidden by default (desktop) */
+}
+
+@media (max-width: 600px) {
+    .mobile-controls-deck {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        align-items: center;
+        background: rgba(18, 18, 18, 0.85); /* Glassmorphism dark */
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 9999px; /* Pill shape */
+        padding: 6px 8px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        gap: 4px;
+        animation: deckSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    
+    /* Light Theme Adjustment */
+    [data-theme='light'] .mobile-controls-deck {
+        background: rgba(255, 255, 255, 0.85);
+        border-color: rgba(0, 0, 0, 0.05);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    @keyframes deckSlideUp {
+        from { transform: translate(-50%, 100%); opacity: 0; }
+        to { transform: translate(-50%, 0); opacity: 1; }
+    }
+
+    .mobile-deck-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        color: var(--fg-muted);
+        transition: all 0.2s ease;
+        background: transparent;
+        border: none;
+    }
+
+    .mobile-deck-btn:hover,
+    .mobile-deck-btn:active {
+        color: var(--accent);
+        background: rgba(var(--accent), 0.1);
+    }
+
+    .mobile-deck-btn svg {
+        width: 20px;
+        height: 20px;
+        stroke-width: 2.5px;
+    }
+
+    .mobile-deck-separator {
+        width: 1px;
+        height: 20px;
+        background: var(--border);
+        margin: 0 2px;
+        opacity: 0.5;
+    }
+}
+
+
+/* FIX: Large Text Mode Finish Button Override */
+.large-text .btn--finish {
+    font-size: 0.9rem !important;
+    padding: var(--space-xs) var(--space-md) !important;
+    right: 1rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin-top: 0 !important;
+    position: absolute !important;
+    width: auto !important;
+    background: var(--bg-surface) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    z-index: 20 !important;
+}
+
+.large-text .btn--finish:hover {
+    transform: translateY(-50%) scale(1.05) !important;
+    box-shadow: 0 4px 15px var(--accent-glow) !important;
+}
+
+.large-text .typing-input {
+    padding-right: 140px !important;
+}
+
+
+/* FIX 2: Refined Design for Large Text Finish Button */
+.large-text .btn--finish {
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.1em !important;
+    padding: 6px 14px !important;
+    right: 8px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    margin-top: 0 !important;
+    position: absolute !important;
+    width: auto !important;
+    
+    /* Avant-Garde Design: Glassy & Tech */
+    background: rgba(255, 179, 71, 0.1) !important;
+    color: var(--accent) !important;
+    border: 1px solid rgba(255, 179, 71, 0.4) !important;
+    border-radius: var(--radius-sm) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(4px);
+    z-index: 20 !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.large-text .btn--finish:hover {
+    background: var(--accent) !important;
+    color: var(--bg) !important;
+    transform: translateY(-50%) scale(1.05) !important;
+    box-shadow: 0 4px 15px var(--accent-glow) !important;
+    border-color: var(--accent) !important;
+}
+
+/* Light Theme Support */
+[data-theme='light'] .large-text .btn--finish {
+   background: rgba(230, 148, 32, 0.1) !important;
+   border-color: rgba(230, 148, 32, 0.4) !important;
+}
+
+.large-text .typing-input {
+    padding-right: 130px !important;
 }

@@ -1181,6 +1181,28 @@ class FastFingers {
         this.els.achievementClose?.addEventListener('click', () => this.closeAchievementModal());
         this.els.achievementModal?.querySelector('.achievement-modal__backdrop')?.addEventListener('click', () => this.closeAchievementModal());
 
+        this.els.mobileRestartBtn = document.getElementById('mobileRestartBtn');
+        this.els.mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+        // Mobile Controls
+        this.els.mobileRestartBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            this.start();
+        });
+
+        this.els.mobileMenuBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this.state.isRunning) {
+                if (this.state.isPaused) {
+                    this.resume();
+                } else {
+                    this.pause();
+                }
+            } else {
+                this.goHome(); // Should not happen in typing screen generally, but safe fallback
+            }
+        });
+
         // Update achievement count on load
         this.updateAchievementCount();
     }
