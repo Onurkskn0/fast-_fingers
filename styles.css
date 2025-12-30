@@ -318,17 +318,19 @@ html.high-contrast {
     padding: var(--space-2xl) var(--space-xl);
 }
 
-/* Stats: Bigger, bolder, clearer */
+/* Stats: Bigger, bolder, clearer - but CONTAINED */
 .large-text .stat-item__value {
-    font-size: 2rem;
+    font-size: 1.5rem;
+    /* Reduced from 2rem to prevent overlap */
     font-weight: 700;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
-.large-text .stat-item__label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+.large-text .stats-card__grid {
+    gap: var(--space-sm);
+    /* Tighter gap for large text mode */
 }
 
 /* Terminal: Improved spacing + size */
@@ -1603,27 +1605,92 @@ kbd {
     /* 2. ADAPT 'SON DENEME' (Stats Card) */
     .stats-card {
         padding: var(--space-md);
+        box-sizing: border-box;
+        overflow: visible;
+        /* Let it grow if needed, don't clip unless internal items need it */
+        height: auto !important;
+        /* Override any potential fixed heights */
+        min-height: auto !important;
+        margin-bottom: var(--space-lg);
+        /* Push down elements below */
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-md);
     }
 
     .stats-card__grid {
-        grid-template-columns: repeat(2, 1fr);
-        /* 2x2 Grid for better readability */
-        gap: var(--space-md) var(--space-sm);
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        /* FORCE 2 columns */
+        gap: var(--space-sm) !important;
+        /* TIGHTENED for more horizontal room */
+        width: 100%;
+        align-items: start;
+    }
+
+    .stat-item {
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        overflow: hidden !important;
+        /* CONTAIN content within cell */
     }
 
     .stat-item::after {
-        display: none;
-        /* remove separators for cleaner grid look */
+        display: none !important;
+        /* Remove separators on mobile grid */
     }
 
     .stat-item__value {
-        font-size: 1.5rem;
+        font-size: 1rem !important;
+        /* SMALL enough to fit */
+        line-height: 1.2;
+        width: 100%;
+        text-align: left;
+        /* DEFINITIVE FIX: Force no wrapping */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
+        /* Clean cut without ... */
+    }
+
+    /* Fix Results Screen (Son Deneme) Layout */
+    .result-details {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-md);
+        width: 100%;
+        margin-top: var(--space-md);
+    }
+
+    .result-detail {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        width: 100%;
+        /* STRICT NO WRAP as requested */
+        white-space: nowrap;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .result-detail__value {
+        font-size: 1.25rem;
+        /* Reduced to fit without wrapping */
+        font-weight: 700;
+        width: 100%;
+        text-overflow: '';
+        /* No ellipsis, just fit or clip subtly */
     }
 
     .pb-share-btn {
-        width: 32px;
-        height: 32px;
-        /* Touch target size optimization */
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+        /* Share button is in header, not grid, but just in case */
     }
 
     /* 3. ADAPT SHARE SCREEN (Mobile Bottom Sheet) */
@@ -2909,12 +2976,14 @@ kbd {
     /* 4. Input & Finish Button (Inherited from 880px) */
     /* No overrides needed here */
 }
+
 /* ===========================================
     MOBILE CONTROL DECK (Floating Actions)
    =========================================== */
 
 .mobile-controls-deck {
-    display: none; /* Hidden by default (desktop) */
+    display: none;
+    /* Hidden by default (desktop) */
 }
 
 @media (max-width: 600px) {
@@ -2925,18 +2994,20 @@ kbd {
         transform: translateX(-50%);
         display: flex;
         align-items: center;
-        background: rgba(18, 18, 18, 0.85); /* Glassmorphism dark */
+        background: rgba(18, 18, 18, 0.85);
+        /* Glassmorphism dark */
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 9999px; /* Pill shape */
+        border-radius: 9999px;
+        /* Pill shape */
         padding: 6px 8px;
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         z-index: 1000;
         gap: 4px;
         animation: deckSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     }
-    
+
     /* Light Theme Adjustment */
     [data-theme='light'] .mobile-controls-deck {
         background: rgba(255, 255, 255, 0.85);
@@ -2945,8 +3016,15 @@ kbd {
     }
 
     @keyframes deckSlideUp {
-        from { transform: translate(-50%, 100%); opacity: 0; }
-        to { transform: translate(-50%, 0); opacity: 1; }
+        from {
+            transform: translate(-50%, 100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
     }
 
     .mobile-deck-btn {
@@ -2995,7 +3073,7 @@ kbd {
     position: absolute !important;
     width: auto !important;
     background: var(--bg-surface) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
     z-index: 20 !important;
 }
 
@@ -3022,7 +3100,7 @@ kbd {
     margin-top: 0 !important;
     position: absolute !important;
     width: auto !important;
-    
+
     /* Avant-Garde Design: Glassy & Tech */
     background: rgba(255, 179, 71, 0.1) !important;
     color: var(--accent) !important;
@@ -3044,8 +3122,8 @@ kbd {
 
 /* Light Theme Support */
 [data-theme='light'] .large-text .btn--finish {
-   background: rgba(230, 148, 32, 0.1) !important;
-   border-color: rgba(230, 148, 32, 0.4) !important;
+    background: rgba(230, 148, 32, 0.1) !important;
+    border-color: rgba(230, 148, 32, 0.4) !important;
 }
 
 .large-text .typing-input {
