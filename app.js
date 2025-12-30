@@ -898,13 +898,14 @@ class FastFingers {
         const timeItem = document.getElementById('pbTimeItem');
         const pbTimeEl = document.getElementById('pbTime');
 
+        // Always show time item for consistency
+        if (timeItem) timeItem.classList.remove('hidden');
+
         if (this.state.duration === -1) {
             if (titleEl) titleEl.textContent = "SON DENEME";
-            if (timeItem) timeItem.classList.remove('hidden');
             document.body.classList.add('infinite-mode');
         } else {
             if (titleEl) titleEl.textContent = "EN İYİ SKOR";
-            if (timeItem) timeItem.classList.add('hidden');
             document.body.classList.remove('infinite-mode');
         }
 
@@ -915,16 +916,29 @@ class FastFingers {
             if (this.els.pbWords) this.els.pbWords.textContent = pb.words || '—';
             this.els.pbChars.textContent = pb.chars;
 
-            // Display time for infinite mode
-            if (this.state.duration === -1 && pb.timeFormatted && pbTimeEl) {
-                pbTimeEl.textContent = pb.timeFormatted;
+            // Display time - different format based on mode
+            if (pbTimeEl) {
+                if (this.state.duration === -1 && pb.timeFormatted) {
+                    pbTimeEl.textContent = pb.timeFormatted;
+                } else if (this.state.duration !== -1) {
+                    pbTimeEl.textContent = this.state.duration + 's';
+                } else {
+                    pbTimeEl.textContent = '—';
+                }
             }
         } else {
             this.els.pbWpm.textContent = '—';
             this.els.pbAccuracy.textContent = '—';
             if (this.els.pbWords) this.els.pbWords.textContent = '—';
             this.els.pbChars.textContent = '—';
-            if (pbTimeEl) pbTimeEl.textContent = '—';
+            // Show mode duration even without saved data
+            if (pbTimeEl) {
+                if (this.state.duration !== -1) {
+                    pbTimeEl.textContent = this.state.duration + 's';
+                } else {
+                    pbTimeEl.textContent = '—';
+                }
+            }
         }
     }
 
