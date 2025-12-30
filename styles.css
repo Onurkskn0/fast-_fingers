@@ -584,11 +584,13 @@ kbd {
     display: none;
 }
 
-[data-sound="off"] .sound-icon--on {
+[data-sound="off"] .sound-icon--on,
+.sound-off .sound-icon--on {
     display: none;
 }
 
-[data-sound="off"] .sound-icon--off {
+[data-sound="off"] .sound-icon--off,
+.sound-off .sound-icon--off {
     display: block;
 }
 
@@ -627,8 +629,11 @@ kbd {
 }
 
 /* Dim when keyclick is off */
-[data-keyclick="off"] .keyclick-icon {
-    opacity: 0.4;
+[data-keyclick="off"] .keyclick-icon,
+.keyclick-off .keyclick-icon {
+    /* Visual indication for off state */
+    opacity: 0.5;
+    text-decoration: line-through;
 }
 
 /* ═══════════════════════════════════════════

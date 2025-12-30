@@ -15,9 +15,38 @@
 
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
-</head>
+    <style>
+        /* Critical FOUC Prevention CSS */
+        .sound-off .sound-icon--on,
+        [data-sound="off"] .sound-icon--on {
+            display: none !important;
+        }
 
-<body>
+        .sound-off .sound-icon--off,
+        [data-sound="off"] .sound-icon--off {
+            display: block !important;
+        }
+
+        .keyclick-off .keyclick-icon,
+        [data-keyclick="off"] .keyclick-icon {
+            opacity: 0.5 !important;
+            text-decoration: line-through !important;
+        }
+
+        html.high-contrast {
+            filter: contrast(1.5);
+        }
+
+        html[data-theme="dark"] body {
+            background-color: #0c0e12;
+            color: #eaeaeb;
+        }
+
+        html[data-theme="light"] body {
+            background-color: #ffffff;
+            color: #1a1a1b;
+        }
+    </style>
     <script>
         // Critical: Apply saved preferences immediately to prevent FOUC
         (function () {
@@ -25,15 +54,24 @@
                 const isHighContrast = localStorage.getItem('ff_high_contrast') === 'true';
                 const isLargeText = localStorage.getItem('ff_large_text') === 'true';
                 const theme = localStorage.getItem('ff-theme') || 'dark';
+                const soundOff = localStorage.getItem('ff_sound') === 'off';
+                const keyclickOff = localStorage.getItem('ff_keyclick') === 'off';
 
                 if (isHighContrast) document.documentElement.classList.add('high-contrast');
                 if (isLargeText) document.documentElement.classList.add('large-text');
+                if (soundOff) document.documentElement.classList.add('sound-off');
+                if (keyclickOff) document.documentElement.classList.add('keyclick-off');
                 document.documentElement.setAttribute('data-theme', theme);
             } catch (e) {
                 console.log('Preferences could not be loaded');
             }
         })();
     </script>
+</head>
+
+<body>
+
+
     <div class="scanlines"></div>
     <div class="vignette"></div>
 
