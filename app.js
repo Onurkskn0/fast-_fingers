@@ -1004,7 +1004,12 @@ class FastFingers {
     updateSoundUI(isEnabled) {
         if (!this.els.soundToggle) return;
         this.els.soundToggle.setAttribute('data-sound', isEnabled ? 'on' : 'off');
-        this.els.soundToggle.style.opacity = isEnabled ? '1' : '0.5';
+        // Sync global class for FOUC prevention styles
+        if (isEnabled) {
+            document.documentElement.classList.remove('sound-off');
+        } else {
+            document.documentElement.classList.add('sound-off');
+        }
     }
 
     toggleKeyclick() {
@@ -1015,7 +1020,12 @@ class FastFingers {
     updateKeyclickUI(isEnabled) {
         if (!this.els.keyclickToggle) return;
         this.els.keyclickToggle.setAttribute('data-keyclick', isEnabled ? 'on' : 'off');
-        this.els.keyclickToggle.style.opacity = isEnabled ? '1' : '0.5';
+        // Sync global class for FOUC prevention styles
+        if (isEnabled) {
+            document.documentElement.classList.remove('keyclick-off');
+        } else {
+            document.documentElement.classList.add('keyclick-off');
+        }
     }
 
     // ═══════════════════════════════════════════
