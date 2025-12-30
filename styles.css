@@ -337,6 +337,11 @@ kbd {
     letter-spacing: 0.04em;
 }
 
+.large-text .terminal__title {
+    font-size: 0.9rem;
+    letter-spacing: 0.03em;
+}
+
 /* Footer hints */
 .large-text kbd {
     font-size: 0.9rem;
@@ -366,6 +371,98 @@ kbd {
     max-width: 880px;
 }
 
+/* Results Screen */
+.large-text .result-main__value {
+    letter-spacing: 0.02em;
+}
+
+.large-text .result-main__label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+}
+
+.large-text .result-detail__value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.large-text .result-detail__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+/* Finish Button (Infinite Mode) */
+.large-text .btn--finish {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+/* Pause Screen */
+.large-text .pause-icon {
+    font-size: 3.5rem;
+}
+
+.large-text .pause-title {
+    font-size: 1.75rem;
+    letter-spacing: 0.12em;
+}
+
+.large-text .pause-hint {
+    font-size: 1rem;
+    letter-spacing: 0.03em;
+}
+
+.large-text .pause-shortcut {
+    font-size: 0.9rem;
+    letter-spacing: 0.02em;
+}
+
+.large-text .restart-btn {
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+}
+
+/* Start Screen Vertical Compaction (Large Text Mode) */
+.large-text .screen--start {
+    gap: var(--space-sm);
+}
+
+.large-text .terminal__body {
+    padding: var(--space-md);
+}
+
+.large-text .stats-card {
+    padding: var(--space-md);
+}
+
+.large-text .stats-card__header {
+    margin-bottom: var(--space-sm);
+}
+
+.large-text .header {
+    margin-bottom: var(--space-md);
+}
+
+/* Duration & Start Buttons (Large Text Mode) */
+.large-text .duration-btn {
+    font-size: 0.95rem;
+    padding: var(--space-sm) var(--space-md);
+}
+
+.large-text .duration-label {
+    display: none;
+    /* Hide label - buttons are self-explanatory */
+}
+
+.large-text .start-btn {
+    font-size: 1.1rem;
+    padding: var(--space-md) var(--space-xl);
+}
+
 
 /* ═══════════════════════════════════════════
    LAYOUT
@@ -388,7 +485,7 @@ kbd {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-2xl);
+    margin-bottom: var(--space-xl);
 }
 
 .logo {
@@ -542,7 +639,7 @@ kbd {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-xl);
+    gap: var(--space-lg);
 }
 
 .hidden {
@@ -649,13 +746,8 @@ kbd {
 
 .stats-card__grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: var(--space-md);
-}
-
-/* When time item is visible (infinite mode) */
-.stats-card__grid:has(.stat-item:not(.hidden):nth-child(4)) {
     grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-md);
 }
 
 .stat-item {
@@ -740,17 +832,17 @@ kbd {
     bottom: var(--space-2xl);
     right: var(--space-2xl);
     padding: var(--space-sm) var(--space-lg);
-    background: transparent;
-    color: var(--fg-muted);
+    background: var(--bg-elevated);
+    color: var(--fg);
     font-size: 0.875rem;
-    font-weight: 500;
-    border: 1px solid var(--border);
+    font-weight: 600;
+    border: 1px solid var(--accent);
     border-radius: var(--radius-md);
     cursor: pointer;
-    opacity: 1;
-    transition: color var(--duration-fast), border-color var(--duration-fast), background var(--duration-fast), opacity var(--duration-base);
+    opacity: 0.85;
+    box-shadow: 0 0 10px var(--accent-glow);
+    transition: all var(--duration-fast);
     z-index: 1000;
-    /* Above pause overlay (z-index: 100) */
 }
 
 .btn--finish.hidden {
@@ -762,6 +854,9 @@ kbd {
     border-color: var(--accent);
     color: var(--accent);
     background: var(--bg-elevated);
+    opacity: 1;
+    box-shadow: 0 0 20px var(--accent-glow);
+    transform: translateY(-2px);
 }
 
 /* Start Button */
