@@ -1034,6 +1034,11 @@ html.high-contrast {
     border-color: var(--accent);
 }
 
+/* High Contrast: No accent border on typing box */
+.high-contrast .typing-box:focus-within {
+    border-color: transparent;
+}
+
 .sentence {
     font-size: 1.25rem;
     line-height: 2;
@@ -1147,6 +1152,13 @@ html.high-contrast {
     transform: translateY(-2px);
 }
 
+/* High Contrast: No colored border on input wrapper */
+/* High Contrast: White border instead of green */
+.high-contrast .input-wrapper:focus-within {
+    border-color: #FFFFFF;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
 .input-prompt {
     color: var(--accent);
     font-weight: 600;
@@ -1170,11 +1182,19 @@ html.high-contrast {
 .typing-input {
     flex: 1;
     font-size: 1.125rem;
-    transition: padding 0.2s ease;
+    /* transition: padding 0.2s ease; RE MOVED to prevent cursor jitter */
 }
 
 .typing-input:focus {
-    padding-left: 2px;
+    /* padding-left: 2px; REMOVED to prevent cursor jitter */
+    outline: none;
+}
+
+/* High Contrast: Ensure no outline on input itself */
+.high-contrast .typing-input:focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 /* Error flash animation for input */
@@ -1451,6 +1471,11 @@ html.high-contrast {
     text-align: center;
     background: var(--bg);
     z-index: 10;
+}
+
+/* High Contrast: Remove footer background */
+.high-contrast .footer {
+    background: transparent;
 }
 
 .key-legend {
@@ -2196,6 +2221,11 @@ kbd {
     justify-content: center;
     box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
     min-height: 200px;
+}
+
+/* High Contrast: Thicker border */
+.high-contrast .share-preview-container {
+    border: 3px solid #FFFFFF;
 }
 
 .share-preview-img {

@@ -2114,9 +2114,7 @@ class FastFingers {
         }).join('<span class="word-space"> </span>');
 
         this.els.sentenceDisplay.innerHTML = html;
-
-        // Initial caret position
-        setTimeout(() => this.updateCaretPosition(), 0);
+        // Caret removed – no positioning needed
     }
 
     escapeHtml(text) {
