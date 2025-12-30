@@ -619,9 +619,17 @@ class FastFingers {
             escHint: document.getElementById('escHint'),
             escHintItem: document.getElementById('escHintItem'),
             enterHint: document.getElementById('enterHint'),
-            enterHintItem: document.getElementById('enterHintItem'),
+            startHintItem: document.getElementById('startHintItem'),
+            startHint: document.getElementById('startHint'),
+            hintSeparator: document.getElementById('hintSeparator'),
+            enterKbd: document.getElementById('enterKbd'),
             spaceHint: document.getElementById('spaceHint'),
-            spaceHintItem: document.getElementById('spaceHintItem'),
+            // spaceHintItem is now startHintItem
+            spaceHintItem: document.getElementById('startHintItem'),
+            // enterHintItem is now startHintItem
+            enterHintItem: document.getElementById('startHintItem'),
+            inputWrapper: document.querySelector('.input-wrapper'),
+
 
             // Share Modal Elements
             shareModal: document.getElementById('shareModal'),
@@ -634,7 +642,8 @@ class FastFingers {
             shareCustomText: document.getElementById('shareCustomText'),
             shareDownloadBtn: document.getElementById('shareDownloadBtn'),
             shareCopyBtn: document.getElementById('shareCopyBtn'),
-            shareTweetBtn: document.getElementById('shareTweetBtn')
+            shareTweetBtn: document.getElementById('shareTweetBtn'),
+            pbShareBtn: document.getElementById('pbShareBtn')
         };
 
         this.state = {
@@ -1264,9 +1273,11 @@ class FastFingers {
         // Update footer hints for typing mode
         if (this.els.escHintItem) this.els.escHintItem.style.display = '';
         if (this.els.escHint) this.els.escHint.textContent = 'Duraklat';
-        if (this.els.spaceHint) this.els.spaceHint.textContent = 'İlerle';
-        if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = '';
-        if (this.els.enterHintItem) this.els.enterHintItem.style.display = 'none';
+
+        if (this.els.startHintItem) this.els.startHintItem.style.display = '';
+        if (this.els.hintSeparator) this.els.hintSeparator.style.display = 'none';
+        if (this.els.enterKbd) this.els.enterKbd.style.display = 'none';
+        if (this.els.startHint) this.els.startHint.textContent = 'İlerle';
     }
 
     loadNewSentence() {
@@ -1315,10 +1326,11 @@ class FastFingers {
         // Update footer hints for home screen - show ALL shortcuts
         if (this.els.escHintItem) this.els.escHintItem.style.display = '';
         if (this.els.escHint) this.els.escHint.textContent = 'Menü';
-        if (this.els.spaceHint) this.els.spaceHint.textContent = 'Başla';
-        if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = '';
-        if (this.els.enterHint) this.els.enterHint.textContent = 'Başla';
-        if (this.els.enterHintItem) this.els.enterHintItem.style.display = '';
+
+        if (this.els.startHintItem) this.els.startHintItem.style.display = '';
+        if (this.els.hintSeparator) this.els.hintSeparator.style.display = '';
+        if (this.els.enterKbd) this.els.enterKbd.style.display = '';
+        if (this.els.startHint) this.els.startHint.textContent = 'Başla';
     }
 
     // ═══════════════════════════════════════════
@@ -1410,6 +1422,10 @@ class FastFingers {
         if (this.els.typingInput) {
             this.els.typingInput.disabled = true;
         }
+
+        // Update footer hints for pause
+        if (this.els.escHint) this.els.escHint.textContent = 'Devam Et';
+        if (this.els.startHintItem) this.els.startHintItem.style.display = 'none';
     }
 
     resume() {
@@ -1422,6 +1438,13 @@ class FastFingers {
         this.state.isPaused = false;
         this.state.pauseTime = null;
         this.els.pauseOverlay?.classList.add('hidden');
+
+        // Restore typing hints
+        if (this.els.escHint) this.els.escHint.textContent = 'Duraklat';
+        if (this.els.startHintItem) this.els.startHintItem.style.display = '';
+        if (this.els.hintSeparator) this.els.hintSeparator.style.display = 'none';
+        if (this.els.enterKbd) this.els.enterKbd.style.display = 'none';
+        if (this.els.startHint) this.els.startHint.textContent = 'İlerle';
 
         // Keep "Finish" button visible in infinite mode when resuming
         const finishBtn = document.getElementById('finishRunBtn');
@@ -1448,7 +1471,7 @@ class FastFingers {
     // SHARE
     // ═══════════════════════════════════════════
 
-    async renderShareImage(themeName, customText) {
+    async renderShareImage(themeName, customText, providedStats = null) {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1; // High res
@@ -1498,13 +1521,45 @@ class FastFingers {
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
 
+        // Use provided stats or fallback to DOM/state. Ensure we have real data.
+        let statsToRender = providedStats;
+        if (!statsToRender) {
+            // Read from DOM first
+            const domWpm = this.els.finalWpm?.textContent;
+            const domAcc = this.els.finalAccuracy?.textContent;
+            const domChars = this.els.finalChars?.textContent;
+            const domWords = this.els.finalWords?.textContent;
+
+            // If DOM values look empty/zero, recalculate from state
+            if (!domWpm || domWpm === '0' || domWpm === '—') {
+                const recalculated = this.calcFinalStats();
+                statsToRender = {
+                    wpm: recalculated.wpm,
+                    accuracy: recalculated.accuracy + '%',
+                    chars: recalculated.correctChars,
+                    words: recalculated.correctWords,
+                    time: document.getElementById('finalTime')?.textContent,
+                    isInfinite: this.state.duration === -1
+                };
+            } else {
+                statsToRender = {
+                    wpm: domWpm,
+                    accuracy: domAcc,
+                    chars: domChars,
+                    words: domWords,
+                    time: document.getElementById('finalTime')?.textContent,
+                    isInfinite: document.getElementById('finalTimeItem') && !document.getElementById('finalTimeItem').classList.contains('hidden')
+                };
+            }
+        }
+
         // Main WPM
         ctx.fillStyle = colors.accent;
         ctx.font = 'bold 100px "Space Grotesk", sans-serif';
         ctx.textAlign = 'center';
         ctx.shadowColor = themeName === 'dark' ? 'rgba(255, 179, 71, 0.2)' : 'transparent';
         ctx.shadowBlur = themeName === 'dark' ? 20 : 0;
-        ctx.fillText(this.els.finalWpm.textContent, centerX, centerY - 20);
+        ctx.fillText(statsToRender.wpm, centerX, centerY - 20);
         ctx.shadowBlur = 0; // Reset shadow
 
         ctx.fillStyle = colors.muted;
@@ -1513,47 +1568,37 @@ class FastFingers {
 
         // Secondary Stats Row - REDESIGNED
         const statsY = centerY + 80;
-        const stats = [
-            { label: 'DOĞRULUK', value: this.els.finalAccuracy.textContent },
-            { label: 'KARAKTER', value: this.els.finalChars.textContent },
-            { label: 'KELİME', value: this.els.finalWords.textContent }
+        const statsRows = [
+            { label: 'DOĞRULUK', value: statsToRender.accuracy },
+            { label: 'KARAKTER', value: statsToRender.chars },
+            { label: 'KELİME', value: statsToRender.words }
         ];
 
-        // Add SÜRE if infinite mode
-        const finalTimeItem = document.getElementById('finalTimeItem');
-        const finalTime = document.getElementById('finalTime');
-        const isInfiniteMode = finalTimeItem && !finalTimeItem.classList.contains('hidden');
-        if (isInfiniteMode && finalTime && finalTime.textContent) {
-            stats.push({ label: 'SÜRE', value: finalTime.textContent });
+        // Add SÜRE if infinite mode (detected from object)
+        if (statsToRender.isInfinite && statsToRender.time) {
+            statsRows.push({ label: 'SÜRE', value: statsToRender.time });
         }
 
         // Center-distributed layout
-        const totalStats = stats.length;
-        // Total width of the stats area: 
-        // 3 items * 160px gap = 320px span roughly? No, let's spread them.
-        // Canvas width 800. 
-        // Division: 800 / (total + 1)
+        const totalStats = statsRows.length;
 
         ctx.textAlign = 'center';
 
-        stats.forEach((stat, i) => {
+        statsRows.forEach((stat, i) => {
             // Distribute evenly across the width
-            // e.g. 3 items: 25%, 50%, 75%
             const x = (canvas.width / (totalStats + 1)) * (i + 1);
 
-            // Value (Modern, Bold)
+            // Value
             ctx.fillStyle = colors.fg;
             ctx.font = '700 36px "Space Grotesk", sans-serif';
             ctx.fillText(stat.value, x, statsY);
 
-            // Label (Modern, Uppercase, Spaced)
+            // Label (Larger, Bolder)
             ctx.fillStyle = colors.muted;
-            ctx.font = 'bold 14px "Space Grotesk", sans-serif'; // Larger, Bolder
-            // Letter spacing simulation (canvas doesn't support letter-spacing natively easily)
-            // We'll just trust the font or draw manual if needed, but Space Grotesk is usually wide enough.
-            ctx.fillText(stat.label.split('').join(String.fromCharCode(8202)), x, statsY + 30); // Hairline space hack for spacing
+            ctx.font = 'bold 14px "Space Grotesk", sans-serif';
+            ctx.fillText(stat.label.split('').join(String.fromCharCode(8202)), x, statsY + 30);
 
-            // Optional: Divider Line between items (except last)
+            // Optional: Divider Line between items
             if (i < totalStats - 1) {
                 const nextX = (canvas.width / (totalStats + 1)) * (i + 2);
                 const midX = (x + nextX) / 2;
@@ -1585,7 +1630,7 @@ class FastFingers {
         return new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
     }
 
-    shareResult() {
+    shareResult(preserveStats = false) {
         this.els.shareModal.classList.remove('hidden');
 
         // Initialize state: Check global HC first
@@ -1598,8 +1643,31 @@ class FastFingers {
         // Clear input
         this.els.shareCustomText.value = '';
 
+        // Clear stale stats ONLY if not preserving (i.e., for normal result sharing)
+        if (!preserveStats) {
+            this.currentShareStats = null;
+        }
+
         // Initial Render
         this.refreshSharePreview();
+    }
+
+    shareBestResult() {
+        const key = this.getStorageKey();
+        const saved = localStorage.getItem(key);
+        if (!saved) return;
+
+        const pb = JSON.parse(saved);
+        this.currentShareStats = {
+            wpm: pb.wpm,
+            accuracy: pb.accuracy + '%',
+            chars: pb.chars,
+            words: pb.words || '—',
+            time: pb.timeFormatted,
+            isInfinite: this.state.duration === -1
+        };
+
+        this.shareResult(true); // Pass true to preserve the stats we just set
     }
 
     closeShareModal() {
@@ -1628,7 +1696,11 @@ class FastFingers {
         this.els.sharePreviewLoader.classList.remove('hidden');
         const customText = this.els.shareCustomText.value || '';
 
-        const blob = await this.renderShareImage(this.activeShareTheme, customText);
+        // If we are sharing active stats (not PB), pass them explicitly or let it fallback
+        // But to be consistent, we pass them.
+        const stats = this.currentShareStats || null;
+
+        const blob = await this.renderShareImage(this.activeShareTheme, customText, stats);
         const url = URL.createObjectURL(blob);
 
         // Revoke old url to prevent memory leaks if exists
@@ -1722,6 +1794,13 @@ class FastFingers {
             this.els.shareThemeHC.addEventListener('click', () => {
                 this.updateShareThemeUI('high-contrast');
                 this.refreshSharePreview();
+            });
+        }
+
+        if (this.els.pbShareBtn) {
+            this.els.pbShareBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.shareBestResult();
             });
         }
 
@@ -1884,8 +1963,7 @@ class FastFingers {
 
         // Update footer hints for results screen
         if (this.els.escHint) this.els.escHint.textContent = 'Menü';
-        if (this.els.enterHintItem) this.els.enterHintItem.style.display = '';
-        if (this.els.spaceHintItem) this.els.spaceHintItem.style.display = 'none';
+        if (this.els.startHintItem) this.els.startHintItem.style.display = 'none';
     }
 
     // ═══════════════════════════════════════════
@@ -2023,13 +2101,22 @@ class FastFingers {
     // ═══════════════════════════════════════════
 
     renderWords() {
-        const html = this.state.words.map((word, index) => {
-            const classes = ['word'];
-            if (index === 0) classes.push('word--current');
-            return `<span class="${classes.join(' ')}" data-index="${index}">${this.escapeHtml(word)}</span>`;
+        const html = this.state.words.map((word, wordIndex) => {
+            const wordClasses = ['word'];
+            if (wordIndex === 0) wordClasses.push('word--current');
+
+            // Wrap each char in a span
+            const charsHtml = word.split('').map((char, charIndex) => {
+                return `<span class="char" data-word="${wordIndex}" data-char="${charIndex}">${this.escapeHtml(char)}</span>`;
+            }).join('');
+
+            return `<span class="${wordClasses.join(' ')}" data-index="${wordIndex}">${charsHtml}</span>`;
         }).join('<span class="word-space"> </span>');
 
         this.els.sentenceDisplay.innerHTML = html;
+
+        // Initial caret position
+        setTimeout(() => this.updateCaretPosition(), 0);
     }
 
     escapeHtml(text) {
@@ -2047,6 +2134,8 @@ class FastFingers {
         const targetLower = turkishToLower(target);
 
         let hasError = false;
+
+        // Word-level error check
         for (let i = 0; i < input.length; i++) {
             if (i >= targetLower.length || inputLower[i] !== targetLower[i]) {
                 hasError = true;
@@ -2055,6 +2144,11 @@ class FastFingers {
         }
 
         wordEl.classList.toggle('word--error', hasError);
+
+        // Fluid input feedback
+        if (this.els.inputWrapper) {
+            this.els.inputWrapper.classList.toggle('input-wrapper--error', hasError);
+        }
     }
 
     markWordCompleted(isCorrect) {

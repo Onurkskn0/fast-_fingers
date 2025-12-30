@@ -131,7 +131,7 @@ kbd {
             rgba(0, 0, 0, 0.03) 1px,
             transparent 1px,
             transparent 2px);
-    z-index: 9998;
+    z-index: 5;
 }
 
 .vignette {
@@ -139,7 +139,7 @@ kbd {
     inset: 0;
     pointer-events: none;
     background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.4) 100%);
-    z-index: 9997;
+    z-index: 4;
 }
 
 [data-theme="light"] .scanlines,
@@ -247,8 +247,8 @@ kbd {
     background: var(--bg);
 }
 
-/* HIGH CONTRAST MODE */
-.high-contrast {
+/* HIGH CONTRAST MODE - Use html. class to ensure it wins specificity */
+html.high-contrast {
     --bg: #000000;
     --bg-elevated: #000000;
     --bg-surface: #000000;
@@ -280,11 +280,12 @@ kbd {
 .high-contrast .btn--finish,
 .high-contrast .btn--share,
 .high-contrast .btn--secondary,
+.high-contrast .pb-share-btn,
 .high-contrast kbd,
 .high-contrast .terminal,
 .high-contrast .terminal__header,
 .high-contrast .stats-card {
-    border-width: 2px;
+    border-width: 3px;
     transition: border-width 0.15s ease;
 }
 
@@ -399,6 +400,8 @@ kbd {
     font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.05em;
+    right: -8rem;
+    /* Closer in Large Text mode */
 }
 
 /* Pause Screen */
@@ -657,6 +660,8 @@ kbd {
 
 .screen--start {
     justify-content: center;
+    gap: var(--space-md);
+    /* Tighter gap to prevent footer overlap in Infinite Mode */
 }
 
 /* Terminal Box */
@@ -734,8 +739,55 @@ kbd {
 .stats-card__header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--space-sm);
     margin-bottom: var(--space-md);
+}
+
+.stats-card__title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.pb-share-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: all var(--duration-fast);
+}
+
+.pb-share-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.pb-share-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+}
+
+.large-text .pb-share-btn {
+    width: 36px;
+    height: 36px;
+}
+
+.large-text .pb-share-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Footer Hint Styling Updates */
+#startHintItem kbd {
+    margin: 0 0.1em;
 }
 
 .stats-card__icon {
@@ -832,10 +884,14 @@ kbd {
 }
 
 /* Finish Button (Infinite Mode) */
+/* Finish Button (Contextual) */
 .btn--finish {
-    position: fixed;
-    bottom: var(--space-2xl);
-    right: var(--space-2xl);
+    position: absolute;
+    right: -12rem;
+    /* Adjusted for better separation */
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
     padding: var(--space-sm) var(--space-lg);
     background: var(--bg-elevated);
     color: var(--fg);
@@ -847,7 +903,8 @@ kbd {
     opacity: 0.85;
     box-shadow: 0 0 10px var(--accent-glow);
     transition: all var(--duration-fast);
-    z-index: 1000;
+    z-index: 100;
+    white-space: nowrap;
 }
 
 .btn--finish.hidden {
@@ -861,7 +918,8 @@ kbd {
     background: var(--bg-elevated);
     opacity: 1;
     box-shadow: 0 0 20px var(--accent-glow);
-    transform: translateY(-2px);
+    transform: translateY(calc(-50% - 2px));
+    /* Maintain center + lift */
 }
 
 /* Start Button */
@@ -968,6 +1026,8 @@ kbd {
     align-items: center;
     justify-content: center;
     transition: border-color var(--duration-fast);
+    position: relative;
+    /* For absolute caret */
 }
 
 .typing-box:focus-within {
@@ -984,37 +1044,88 @@ kbd {
     gap: 0;
 }
 
-/* Word-based styling */
+/* Word & Character styling */
 .word {
-    display: inline-block;
-    padding: 0.1em 0.2em;
+    display: flex;
+    padding: 0.1em 0.1rem;
     margin: 0.1em;
     border-radius: var(--radius-sm);
-    transition: all var(--duration-fast);
+    transition: opacity var(--duration-fast);
 }
 
 .word-space {
-    display: inline;
+    display: inline-block;
+}
+
+.char {
+    display: inline-block;
+    position: relative;
+    /* No color transition here anymore, strictly visual */
 }
 
 .word--current {
-    background: var(--accent);
-    color: var(--bg);
+    background: rgba(255, 179, 71, 0.12);
+    /* Slightly more transparent for fluidity */
+    color: var(--fg);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 1px rgba(255, 179, 71, 0.05);
 }
 
-.word--current.word--error {
-    background: var(--error);
-    color: #fff;
+[data-theme="light"] .word--current {
+    background: rgba(230, 148, 32, 0.1);
+    /* Cleaner warm tone */
+    box-shadow: none;
+    border: none;
 }
 
-.word--correct {
-    color: var(--success);
+/* High Contrast Highlight */
+.high-contrast .word--current {
+    background: var(--fg) !important;
+    color: var(--bg) !important;
+    border: none !important;
+    font-weight: 700;
 }
 
-.word--incorrect {
+
+
+.word--incorrect .char {
     color: var(--error);
     text-decoration: line-through;
     opacity: 0.7;
+}
+
+.word--correct .char {
+    color: var(--success);
+}
+
+/* Caret */
+/* Caret Removed */
+
+
+.typing-box:focus-within .caret {
+    opacity: 1;
+}
+
+.caret--blinking {
+    animation: caretBlink 1s infinite steps(2);
+}
+
+@keyframes caretBlink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+.high-contrast .caret {
+    width: 3px;
+    transition: none;
+    /* Instant in HC */
 }
 
 /* Input */
@@ -1024,18 +1135,68 @@ kbd {
     gap: var(--space-sm);
     padding: var(--space-md) var(--space-lg);
     background: var(--bg-elevated);
-    border: 2px solid var(--accent);
+    border: 2px solid var(--border);
     border-radius: var(--radius-md);
+    transition: all var(--duration-base) var(--ease-out);
+    position: relative;
+}
+
+.input-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px var(--accent-glow);
+    transform: translateY(-2px);
 }
 
 .input-prompt {
     color: var(--accent);
     font-weight: 600;
+    animation: promptBreathe 2s infinite ease-in-out;
+}
+
+@keyframes promptBreathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.7;
+    }
 }
 
 .typing-input {
     flex: 1;
     font-size: 1.125rem;
+    transition: padding 0.2s ease;
+}
+
+.typing-input:focus {
+    padding-left: 2px;
+}
+
+/* Error flash animation for input */
+.input-wrapper--error {
+    animation: inputShake 0.4s var(--ease-out);
+    border-color: var(--error) !important;
+}
+
+@keyframes inputShake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
 }
 
 .typing-input::placeholder {
@@ -1261,15 +1422,20 @@ kbd {
     color: var(--accent);
 }
 
-.btn--accent {
-    background: transparent;
-    border: 2px solid var(--accent);
-    color: var(--accent);
-}
-
 .btn--accent:hover {
     background: var(--accent);
     color: var(--bg);
+}
+
+/* Finish Button (Contextual) */
+.btn--finish {
+    position: absolute;
+    right: -7rem;
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    z-index: 100;
+    white-space: nowrap;
 }
 
 /* ═══════════════════════════════════════════
@@ -1954,7 +2120,8 @@ kbd {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
+    /* Slightly darker for better isolation */
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -2132,17 +2299,40 @@ kbd {
 }
 
 #shareDownloadBtn {
-    background: var(--accent);
-    color: var(--bg);
-    border: 1px solid var(--accent);
-    font-weight: 700;
+    background: rgba(255, 255, 255, 0.03);
+    /* Glassy default */
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    transition: all var(--duration-fast);
 }
 
 #shareDownloadBtn:hover {
-    filter: brightness(1.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.1);
+    /* Slight tint */
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(234, 157, 52, 0.3);
-    /* Approx accent shadow */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#shareCopyBtn {
+    background: rgba(255, 255, 255, 0.03);
+    /* Glassy default */
+    border: 1px solid var(--border);
+    color: var(--fg);
+    font-weight: 600;
+    backdrop-filter: blur(4px);
+    transition: all var(--duration-fast);
+}
+
+#shareCopyBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--bg-surface);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .btn--twitter {

@@ -32,20 +32,6 @@
             opacity: 0.5 !important;
             text-decoration: line-through !important;
         }
-
-        html.high-contrast {
-            filter: contrast(1.5);
-        }
-
-        html[data-theme="dark"] body {
-            background-color: #0c0e12;
-            color: #eaeaeb;
-        }
-
-        html[data-theme="light"] body {
-            background-color: #ffffff;
-            color: #1a1a1b;
-        }
     </style>
     <script>
         // Critical: Apply saved preferences immediately to prevent FOUC
@@ -184,8 +170,20 @@
             <!-- Personal Best -->
             <div class="stats-card" id="personalBest">
                 <div class="stats-card__header">
-                    <span class="stats-card__icon">★</span>
-                    <span class="stats-card__title" id="pbTitle">EN İYİ SKOR</span>
+                    <div class="stats-card__title-wrapper">
+                        <span class="stats-card__icon">★</span>
+                        <span class="stats-card__title" id="pbTitle">EN İYİ SKOR</span>
+                    </div>
+                    <button class="pb-share-btn" id="pbShareBtn" title="Rekoru Paylaş">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                    </button>
                 </div>
                 <div class="stats-card__grid">
                     <div class="stat-item">
@@ -254,6 +252,7 @@
 
             <!-- Sentence Display -->
             <div class="typing-box">
+
                 <div class="sentence" id="sentenceDisplay"></div>
             </div>
 
@@ -264,6 +263,10 @@
                     autocapitalize="off" spellcheck="false" placeholder="yazmaya başla...">
                 <button class="submit-btn" id="submitBtn" type="button" aria-label="Sonraki kelime">
                     →
+                </button>
+                <!-- Contextual Finish Button (Infinite Mode) -->
+                <button class="btn btn--finish" id="finishRunBtn">
+                    ✓ BİTİR
                 </button>
             </div>
 
@@ -343,11 +346,7 @@
             </div>
         </section>
 
-        <!-- Finish Button for Infinite Mode - OUTSIDE hidden sections to prevent teleportation -->
-        <button class="btn btn--finish" id="finishRunBtn"
-            style="position: fixed; bottom: 3rem; right: 3rem; opacity: 0; pointer-events: none;">
-            ✓ BİTİR
-        </button>
+
 
         <!-- Pause Overlay -->
         <div class="pause-overlay hidden" id="pauseOverlay">
@@ -427,11 +426,9 @@
                 <div class="key-item" id="escHintItem">
                     <kbd>ESC</kbd> <span id="escHint">Menü</span>
                 </div>
-                <div class="key-item" id="spaceHintItem">
-                    <kbd>space</kbd> <span id="spaceHint">Başla</span>
-                </div>
-                <div class="key-item" id="enterHintItem">
-                    <kbd>enter</kbd> <span id="enterHint">Başla</span>
+                <div class="key-item" id="startHintItem">
+                    <kbd>space</kbd> <span id="hintSeparator">+</span> <kbd id="enterKbd">enter</kbd> <span
+                        id="startHint">Başla</span>
                 </div>
             </div>
         </footer>
